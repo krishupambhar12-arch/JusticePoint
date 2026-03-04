@@ -302,17 +302,17 @@ router.put("/profile", auth, upload.single("profile_pic"), async (req, res) => {
       return res.status(404).json({ message: "Attorney not found" });
     }
 
-    // Update fields
-    if (attorneyName) attorney.attorneyName = attorneyName;
-    if (attorneyEmail) attorney.attorneyEmail = attorneyEmail;
-    if (attorneyPhone) attorney.attorneyPhone = attorneyPhone;
-    if (attorneyGender) attorney.attorneyGender = attorneyGender;
-    if (attorneyAddress) attorney.attorneyAddress = attorneyAddress;
-    if (attorneyDOB) attorney.attorneyDOB = attorneyDOB;
-    if (specialization) attorney.specialization = specialization;
-    if (qualification) attorney.qualification = qualification;
-    if (experience) attorney.experience = parseInt(experience) || 0;
-    if (fees) attorney.fees = parseFloat(fees) || 0;
+    // Update fields - only update if value is provided and not empty
+    if (attorneyName && attorneyName.trim()) attorney.attorneyName = attorneyName.trim();
+    if (attorneyEmail && attorneyEmail.trim()) attorney.attorneyEmail = attorneyEmail.trim();
+    if (attorneyPhone && attorneyPhone.trim()) attorney.attorneyPhone = attorneyPhone.trim();
+    if (attorneyGender && attorneyGender.trim()) attorney.attorneyGender = attorneyGender.trim();
+    if (attorneyAddress && attorneyAddress.trim()) attorney.attorneyAddress = attorneyAddress.trim();
+    if (attorneyDOB && attorneyDOB.trim()) attorney.attorneyDOB = attorneyDOB.trim();
+    if (specialization && specialization.trim()) attorney.specialization = specialization.trim();
+    if (qualification && qualification.trim()) attorney.qualification = qualification.trim();
+    if (experience !== undefined && experience !== "") attorney.experience = parseInt(experience) || 0;
+    if (fees !== undefined && fees !== "") attorney.fees = parseFloat(fees) || 0;
     if (req.file) {
     console.log("🔍 Profile picture uploaded:", req.file.filename);
     console.log("🔍 Full file path:", req.file.path);
@@ -353,6 +353,7 @@ router.get("/dashboard", auth, async (req, res) => {
     // Attorney profile (direct lookup by attorney ID)
     const attorney = await Attorney.findById(req.userId).lean();
     console.log("🔍 Attorney found:", attorney ? "Yes" : "No");
+    console.log("🔍 Attorney data:", attorney);
     
     if (!attorney) {
       console.log("❌ Attorney not found for ID:", req.userId);

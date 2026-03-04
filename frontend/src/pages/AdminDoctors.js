@@ -269,9 +269,25 @@ const AdminDoctors = () => {
   };
 
   const handleDeleteDoctor = async (doctorId) => {
-    if (window.confirm('Are you sure you want to delete this attorney? This action cannot be undone.')) {
+    // Check if user is authenticated as admin
+    if (!token) {
+      setMessage('Please login first');
+      return;
+    }
+    
+    if (role !== 'Admin') {
+      setMessage('Access denied. Admin privileges required.');
+      return;
+    }
+    
+    const doctorName = doctors.find(d => d.id === doctorId)?.name || 'this attorney';
+    
+    if (window.confirm(`Are you sure you want to delete ${doctorName}? This action cannot be undone.`)) {
       setActionLoading(prev => ({ ...prev, deleting: doctorId }));
       try {
+        console.log("🔍 Frontend Delete Debug - Deleting attorney ID:", doctorId);
+        console.log("🔍 Frontend Delete Debug - Token:", token ? token.substring(0, 20) + "..." : "null");
+        
         const response = await fetch(`${API.ADMIN_CODES}/${doctorId}`, {
           method: 'DELETE',
           headers: {
@@ -280,13 +296,16 @@ const AdminDoctors = () => {
           }
         });
 
+        const data = await response.json();
+        
         if (response.ok) {
-          setMessage('Attorney deleted successfully');
+          setMessage(`Attorney "${doctorName}" deleted successfully (data preserved in database)`);
           fetchDoctors();
         } else {
-          setMessage('Error deleting attorney');
+          setMessage(data.message || 'Error deleting attorney');
         }
       } catch (error) {
+        console.error("❌ Delete error:", error);
         setMessage('Error connecting to server');
       } finally {
         setActionLoading(prev => ({ ...prev, deleting: null }));

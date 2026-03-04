@@ -36,6 +36,8 @@ export const API = {
   ADMIN_DOCTORS: `${BASE_URL}/admin/doctors`,
   ADMIN_CODES: `${BASE_URL}/admin/codes`,
   ADMIN_CODES_CHECK: `${BASE_URL}/admin/codes/check`,
+  ADMIN_CODES_DELETED: `${BASE_URL}/admin/codes/deleted`,
+  ADMIN_CODES_RESTORE: `${BASE_URL}/admin/codes`,
   ADMIN_CREATE: `${BASE_URL}/admin/create`,
   ADMIN_LIST: `${BASE_URL}/admin/list`,
   ADMIN_UPDATE_PERMISSIONS: `${BASE_URL}/admin/permissions`,

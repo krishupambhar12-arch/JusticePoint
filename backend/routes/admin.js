@@ -229,14 +229,15 @@ router.delete("/users/:id", auth, async (req, res) => {
 
 // ===== CODES API ROUTES =====
 
-// CHECK ATTORNEY CODES
+// CHECK ATTORNEY CODES (ACTIVE ONLY)
 router.post("/codes/check", async (req, res) => {
   try {
     const { attorneyCode } = req.body;
 
-    // Find attorney by attorney code in codes table
+    // Find attorney by attorney code in codes table (only active ones)
     const attorney = await Code.findOne({
-      attorneyCode: attorneyCode
+      attorneyCode: attorneyCode,
+      isActive: true
     });
 
     if (attorney) {
@@ -250,14 +251,14 @@ router.post("/codes/check", async (req, res) => {
   }
 });
 
-// GET ALL CODES
+// GET ALL CODES (ACTIVE ONLY)
 router.get("/codes", auth, async (req, res) => {
   try {
     if (req.userRole !== "Admin") {
       return res.status(403).json({ message: "Only admins can access codes" });
     }
 
-    const codes = await Code.find().sort({ createdAt: -1 });
+    const codes = await Code.find({ isActive: true }).sort({ createdAt: -1 });
     
     const formattedCodes = codes.map(code => ({
       id: code._id,
@@ -275,6 +276,37 @@ router.get("/codes", auth, async (req, res) => {
     res.json({ codes: formattedCodes });
   } catch (error) {
     console.error("Get codes error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET DELETED/INACTIVE CODES (FOR ADMIN REFERENCE)
+router.get("/codes/deleted", auth, async (req, res) => {
+  try {
+    if (req.userRole !== "Admin") {
+      return res.status(403).json({ message: "Only admins can access deleted codes" });
+    }
+
+    const codes = await Code.find({ isActive: false }).sort({ deletedAt: -1 });
+    
+    const formattedCodes = codes.map(code => ({
+      id: code._id,
+      name: code.name,
+      email: code.email,
+      phone: code.phone,
+      gender: code.gender,
+      qualification: code.qualification,
+      joiningDate: code.joiningDate,
+      attorneyCode: code.attorneyCode,
+      deletedAt: code.deletedAt,
+      deletionReason: code.deletionReason,
+      createdAt: code.createdAt,
+      updatedAt: code.updatedAt
+    }));
+
+    res.json({ deletedCodes: formattedCodes });
+  } catch (error) {
+    console.error("Get deleted codes error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -383,11 +415,54 @@ router.put("/codes/:id", auth, async (req, res) => {
   }
 });
 
-// DELETE CODE
+// DELETE CODE (SOFT DELETE)
 router.delete("/codes/:id", auth, async (req, res) => {
   try {
+    console.log("🔍 Delete Code Debug - User role:", req.userRole);
+    console.log("🔍 Delete Code Debug - Code ID:", req.params.id);
+    
     if (req.userRole !== "Admin") {
+      console.log("❌ Access denied - User role:", req.userRole);
       return res.status(403).json({ message: "Only admins can delete codes" });
+    }
+
+    const codeId = req.params.id;
+    const code = await Code.findById(codeId);
+    
+    if (!code) {
+      console.log("❌ Attorney not found - ID:", codeId);
+      return res.status(404).json({ message: "Attorney not found" });
+    }
+
+    // Soft delete - mark as inactive instead of deleting
+    code.isActive = false;
+    code.deletedAt = new Date();
+    code.deletionReason = "Admin soft delete";
+    await code.save();
+
+    console.log("✅ Attorney marked as inactive (not deleted):", code.name);
+
+    res.json({ 
+      message: "Attorney deleted successfully",
+      attorney: {
+        id: code._id,
+        name: code.name,
+        email: code.email,
+        status: "inactive",
+        deletedAt: code.deletedAt
+      }
+    });
+  } catch (error) {
+    console.error("Delete code error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// RESTORE DELETED CODE
+router.put("/codes/:id/restore", auth, async (req, res) => {
+  try {
+    if (req.userRole !== "Admin") {
+      return res.status(403).json({ message: "Only admins can restore codes" });
     }
 
     const codeId = req.params.id;
@@ -397,11 +472,29 @@ router.delete("/codes/:id", auth, async (req, res) => {
       return res.status(404).json({ message: "Attorney not found" });
     }
 
-    await Code.findByIdAndDelete(codeId);
+    if (code.isActive) {
+      return res.status(400).json({ message: "Attorney is already active" });
+    }
 
-    res.json({ message: "Attorney deleted successfully" });
+    // Restore the code
+    code.isActive = true;
+    code.deletedAt = null;
+    code.deletionReason = null;
+    await code.save();
+
+    console.log("✅ Attorney restored successfully:", code.name);
+
+    res.json({
+      message: "Attorney restored successfully",
+      attorney: {
+        id: code._id,
+        name: code.name,
+        email: code.email,
+        status: "active"
+      }
+    });
   } catch (error) {
-    console.error("Delete code error:", error);
+    console.error("Restore code error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });

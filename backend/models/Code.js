@@ -36,6 +36,18 @@ const CodeSchema = new mongoose.Schema({
     required: true,
     unique: true,
     trim: true
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  deletedAt: {
+    type: Date,
+    default: null
+  },
+  deletionReason: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true

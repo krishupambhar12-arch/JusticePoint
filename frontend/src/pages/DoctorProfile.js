@@ -12,6 +12,7 @@ const AttorneyProfile = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [file, setFile] = useState(null);
+  const [originalData, setOriginalData] = useState({});
   const [attorney, setAttorney] = useState({
     attorneyName: "",
     attorneyEmail: "",
@@ -35,10 +36,14 @@ const AttorneyProfile = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
+        console.log("🔍 Raw response data:", data);
+        console.log("🔍 Attorney object:", data.attorney);
+        console.log("🔍 Attorney name from response:", data?.attorney?.name);
+        console.log("🔍 Attorney email from response:", data?.attorney?.email);
+        
         if (!res.ok) throw new Error(data.message || "Failed to load profile");
 
-        setAttorney((prev) => ({
-          ...prev,
+        const updatedAttorney = {
           attorneyName: data?.attorney?.name || "",
           attorneyEmail: data?.attorney?.email || "",
           attorneyPhone: data?.attorney?.phone || "",
@@ -52,7 +57,14 @@ const AttorneyProfile = () => {
           profilePicture: data?.attorney?.profile_pic
             ? `${BACKEND_URL}/${data.attorney.profile_pic}`
             : "",
-        }));
+        };
+
+        setAttorney(updatedAttorney);
+        setOriginalData(updatedAttorney); // Store original values
+        
+        console.log("🔍 Updated attorney state:", updatedAttorney);
+        console.log("🔍 Attorney name after setting:", updatedAttorney.attorneyName);
+        console.log("🔍 Attorney email after setting:", updatedAttorney.attorneyEmail);
       } catch (e) {
         console.error("Profile load error:", e);
         // show minimal error, keep defaults
@@ -62,7 +74,13 @@ const AttorneyProfile = () => {
   }, []);
 
   const handleChange = (e) => {
-    setAttorney({ ...attorney, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setAttorney({ ...attorney, [name]: value });
+    
+    // If user is entering the name field, clear the error message
+    if (name === "attorneyName" && value && value.trim()) {
+      setMessage("");
+    }
   };
 
   const handleFileChange = (e) => {
@@ -100,21 +118,83 @@ const AttorneyProfile = () => {
         type: file.type
       } : "No file");
       
+      console.log("🔍 Current attorney data:", attorney);
+      console.log("🔍 Original data:", originalData);
+      console.log("🔍 Attorney name exists:", !!attorney.attorneyName);
+      console.log("🔍 Attorney email exists:", !!attorney.attorneyEmail);
+      
       const form = new FormData();
       
-      // Personal details from signup
-      if (attorney.attorneyName) form.append("attorneyName", attorney.attorneyName);
-      if (attorney.attorneyEmail) form.append("attorneyEmail", attorney.attorneyEmail);
-      if (attorney.attorneyPhone) form.append("attorneyPhone", attorney.attorneyPhone);
-      if (attorney.attorneyGender) form.append("attorneyGender", attorney.attorneyGender);
-      if (attorney.attorneyAddress) form.append("attorneyAddress", attorney.attorneyAddress);
-      if (attorney.attorneyDOB) form.append("attorneyDOB", attorney.attorneyDOB);
+      // Always send essential fields to prevent validation errors, especially when uploading photo
+      // Use fallback data if attorney data is not properly loaded
+      const name = attorney.attorneyName || originalData.attorneyName || "";
+      const email = attorney.attorneyEmail || originalData.attorneyEmail || "";
+      const phone = attorney.attorneyPhone || originalData.attorneyPhone || "";
+      const gender = attorney.attorneyGender || originalData.attorneyGender || "Male";
       
-      // Professional details
-      if (attorney.specialization) form.append("specialization", attorney.specialization);
-      if (attorney.qualification) form.append("qualification", attorney.qualification);
-      if (attorney.experience !== "") form.append("experience", String(parseInt(attorney.experience || 0, 10)));
-      if (attorney.fees !== "") form.append("fees", String(parseInt(attorney.fees || 0, 10)));
+      console.log("🔍 Using fallback data:", { name, email, phone, gender });
+      
+      // Validate that we have minimum required data
+      if (!name || !name.trim()) {
+        // Try to get name from user info as last resort
+        const userInfo = JSON.parse(localStorage.getItem("user") || "{}");
+        const fallbackName = userInfo.name || "";
+        
+        if (fallbackName && fallbackName.trim()) {
+          console.log("🔍 Using fallback name from user info:", fallbackName);
+          form.append("attorneyName", fallbackName.trim());
+        } else {
+          setMessage("Name is required. Please refresh the page and try again.");
+          setSaving(false);
+          return;
+        }
+      } else {
+        if (name && name.trim()) {
+          form.append("attorneyName", name.trim());
+        }
+      }
+      
+      if (!email || !email.trim()) {
+        setMessage("Email is required. Please refresh the page and try again.");
+        setSaving(false);
+        return;
+      }
+      
+      if (email && email.trim()) {
+        form.append("attorneyEmail", email.trim());
+      }
+      if (phone && phone.trim()) {
+        form.append("attorneyPhone", phone.trim());
+      }
+      if (gender && gender.trim()) {
+        form.append("attorneyGender", gender.trim());
+      }
+      
+      // Send other fields only if they have changed or if uploading photo (to ensure complete data)
+      const isUploadingPhoto = !!file;
+      
+      if (isUploadingPhoto || (attorney.attorneyAddress && attorney.attorneyAddress.trim() && attorney.attorneyAddress !== originalData.attorneyAddress)) {
+        form.append("attorneyAddress", attorney.attorneyAddress.trim());
+      }
+      if (isUploadingPhoto || (attorney.attorneyDOB && attorney.attorneyDOB.trim() && attorney.attorneyDOB !== originalData.attorneyDOB)) {
+        form.append("attorneyDOB", attorney.attorneyDOB.trim());
+      }
+      
+      // Professional details - send if changed or if uploading photo
+      if (isUploadingPhoto || (attorney.specialization && attorney.specialization.trim() && attorney.specialization !== originalData.specialization)) {
+        form.append("specialization", attorney.specialization.trim());
+      }
+      if (isUploadingPhoto || (attorney.qualification && attorney.qualification.trim() && attorney.qualification !== originalData.qualification)) {
+        form.append("qualification", attorney.qualification.trim());
+      }
+      if (isUploadingPhoto || (attorney.experience !== undefined && attorney.experience !== "" && attorney.experience !== null && attorney.experience !== originalData.experience)) {
+        form.append("experience", String(parseInt(attorney.experience || 0, 10)));
+      }
+      if (isUploadingPhoto || (attorney.fees !== undefined && attorney.fees !== "" && attorney.fees !== null && attorney.fees !== originalData.fees)) {
+        form.append("fees", String(parseInt(attorney.fees || 0, 10)));
+      }
+      
+      // Profile picture - send if new file is selected
       if (file) {
         console.log("🔍 Adding file to FormData:", file.name);
         form.append("profile_pic", file);
@@ -138,7 +218,7 @@ const AttorneyProfile = () => {
       console.log("🔍 Response data:", data);
       
       if (!res.ok) throw new Error(data.message || "Failed to update profile");
-      setMessage("Profile updated successfully");
+      setMessage("Profile updated successfully. Only changed fields were saved.");
       setEdit(false);
       
       // Reload profile data after successful update
