@@ -9,15 +9,12 @@ const Header = () => {
   const role = localStorage.getItem("role");
 
   const goToDashboard = () => {
-    const isAttorney = role === "Attorney";
     const isClient = role === "Client";
 
-    if (isAttorney) {
-      navigate("/attorney/dashboard");
-    } else if (isClient) {
+    if (isClient) {
       navigate("/client/dashboard");
     } else {
-      navigate("/"); // fallback
+      navigate("/"); // fallback to home
     }
   };
 
