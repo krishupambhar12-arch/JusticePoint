@@ -153,10 +153,15 @@ const AttorneyListing = () => {
                 <div key={attorney.id} className="doctor-card">
                   <div className="doctor-image">
                     <img
-                      src={attorney.profile_pic ? `${BACKEND_URL}/${attorney.profile_pic}` : ""}
+                      src={
+                        attorney.profile_pic 
+                          ? `${BACKEND_URL}/${attorney.profile_pic}`
+                          : `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Ccircle cx='60' cy='60' r='60' fill='%23e0e0e0'/%3E%3Ctext x='60' y='60' text-anchor='middle' dy='.3em' font-family='Arial' font-size='40' fill='%23999'%3E${attorney.name ? attorney.name.charAt(0).toUpperCase() : 'A'}%3C/text%3E%3C/svg%3E`
+                      }
                       alt={attorney.name}
                       onError={(e) => {
-                        e.target.style.display = "none";
+                        // Fallback to initial avatar if image fails to load
+                        e.target.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Ccircle cx='60' cy='60' r='60' fill='%23e0e0e0'/%3E%3Ctext x='60' y='60' text-anchor='middle' dy='.3em' font-family='Arial' font-size='40' fill='%23999'%3E${attorney.name ? attorney.name.charAt(0).toUpperCase() : 'A'}%3C/text%3E%3C/svg%3E`;
                       }}
                     />
                   </div>

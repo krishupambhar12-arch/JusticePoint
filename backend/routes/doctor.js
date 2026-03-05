@@ -470,50 +470,58 @@ router.get("/all", async (req, res) => {
   try {
     const { specialization, search } = req.query;
     
-    // Build query
-    let query = {};
-    
-    // Filter by specialization if provided
-    if (specialization && specialization !== 'all') {
-      query.specialization = { $regex: specialization, $options: 'i' };
-    }
-    
-    // Get all attorneys
-    let attorneys = await Attorney.find(query)
+    // Get active attorneys from Code model (admin managed)
+    const Code = require("../models/Code");
+    const codeAttorneys = await Code.find({ isActive: true })
       .sort({ createdAt: -1 })
       .lean();
     
+    // Check which of these attorneys have actually signed up (exist in Attorney model)
+    const Attorney = require("../models/Attorney");
+    const signedUpAttorneys = [];
+    
+    for (const codeAttorney of codeAttorneys) {
+      // Check if this attorney exists in Attorney model (has signed up)
+      const attorneyRecord = await Attorney.findOne({ 
+        attorneyEmail: codeAttorney.email 
+      }).lean();
+      
+      if (attorneyRecord) {
+        // Attorney has signed up, include them in public listing
+        signedUpAttorneys.push({
+          id: codeAttorney._id,
+          name: codeAttorney.name || "Attorney Unknown",
+          email: codeAttorney.email || "",
+          phone: codeAttorney.phone || "",
+          specialization: attorneyRecord.specialization || "General Practice",
+          qualification: codeAttorney.qualification || "",
+          experience: attorneyRecord.experience || 0,
+          fees: attorneyRecord.fees || 100,
+          profile_pic: attorneyRecord.profilePicture ? `uploads/${attorneyRecord.profilePicture}` : null,
+          rating: 4.5,
+          available: true
+        });
+      }
+    }
+    
     // Apply search filter if provided
+    let filteredAttorneys = signedUpAttorneys;
     if (search) {
       const searchRegex = new RegExp(search, 'i');
-      attorneys = attorneys.filter(attorney => 
-        attorney.attorneyName?.match(searchRegex) ||
-        attorney.specialization?.match(searchRegex) ||
-        attorney.qualification?.match(searchRegex)
+      filteredAttorneys = signedUpAttorneys.filter(attorney => 
+        attorney.name?.match(searchRegex) ||
+        attorney.qualification?.match(searchRegex) ||
+        attorney.email?.match(searchRegex) ||
+        attorney.specialization?.match(searchRegex)
       );
     }
     
-    // Format for frontend
-    const formattedAttorneys = attorneys.map(attorney => ({
-      id: attorney._id,
-      name: attorney.attorneyName || "Attorney Unknown",
-      email: attorney.attorneyEmail || "",
-      phone: attorney.attorneyPhone || "",
-      specialization: attorney.specialization,
-      qualification: attorney.qualification,
-      experience: attorney.experience,
-      fees: attorney.fees,
-      profile_pic: attorney.profilePicture,
-      rating: 4.5, // You can add rating system later
-      available: true
-    }));
-    
     res.json({
-      attorneys: formattedAttorneys,
-      total: formattedAttorneys.length
+      attorneys: filteredAttorneys,
+      total: filteredAttorneys.length
     });
   } catch (e) {
-    console.error("Get all doctors error:", e);
+    console.error("Get all attorneys error:", e);
     res.status(500).json({ message: "Server error" });
   }
 });
