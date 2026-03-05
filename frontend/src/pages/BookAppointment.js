@@ -11,10 +11,18 @@ const BookAppointment = () => {
   const [doctor, setDoctor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
+    subject: "",
+    personalInfo: {
+      name: "",
+      email: "",
+      phone: ""
+    },
+    purpose: "",
+    caseSummary: "",
+    documents: "",
+    desiredOutcome: "",
     date: "",
-    time: "",
-    symptoms: "",
-    notes: ""
+    time: ""
   });
   const [message, setMessage] = useState("");
 
@@ -63,17 +71,42 @@ const BookAppointment = () => {
   }, [fetchDoctorDetails]);
 
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    
+    if (name.includes('.')) {
+      // Handle nested fields like personalInfo.name
+      const [parent, child] = name.split('.');
+      setFormData({
+        ...formData,
+        [parent]: {
+          ...formData[parent],
+          [child]: value
+        }
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validate required fields
+    if (!formData.subject || !formData.purpose || !formData.caseSummary || !formData.desiredOutcome) {
+      setMessage("Please fill in all required fields");
+      return;
+    }
+
+    if (!formData.personalInfo.name || !formData.personalInfo.email || !formData.personalInfo.phone) {
+      setMessage("Please complete your personal information");
+      return;
+    }
+
     if (!formData.date || !formData.time) {
-      setMessage("Please select date and time");
+      setMessage("Please select preferred date and time");
       return;
     }
 
@@ -88,8 +121,16 @@ const BookAppointment = () => {
         doctor_id: doctorId,
         date: formData.date,
         time: formData.time,
-        symptoms: formData.symptoms,
-        notes: formData.notes
+        subject: formData.subject,
+        personalInfo: formData.personalInfo,
+        purpose: formData.purpose,
+        caseSummary: formData.caseSummary,
+        documents: formData.documents,
+        desiredOutcome: formData.desiredOutcome,
+        attorneyName: doctor.name,
+        attorneySpecialization: doctor.specialization,
+        attorneyFees: doctor.fees,
+        status: "pending"
       };
 
       const res = await fetch(API.BOOK_APPOINTMENT, {
@@ -106,7 +147,7 @@ const BookAppointment = () => {
       if (res.ok) {
         setMessage("Consultation booked successfully!");
         setTimeout(() => {
-          navigate("/patient/appointments");
+          navigate("/client/appointments");
         }, 2000);
       } else {
         setMessage(data.message || "Failed to book consultation");
@@ -220,72 +261,148 @@ const BookAppointment = () => {
             )}
 
             <form onSubmit={handleSubmit}>
+              {/* 1. Subject Line */}
               <div className="form-group">
-                <label htmlFor="date">Preferred Date *</label>
+                <label htmlFor="subject">Subject Line *</label>
                 <input
-                  type="date"
-                  id="date"
-                  name="date"
-                  value={formData.date}
+                  type="text"
+                  id="subject"
+                  name="subject"
+                  value={formData.subject}
                   onChange={handleInputChange}
-                  min={new Date().toISOString().split('T')[0]}
+                  placeholder="Brief subject of consultation"
                   required
                 />
               </div>
 
+              {/* 2. Personal Information */}
               <div className="form-group">
-                <label htmlFor="time">Preferred Time *</label>
+                <label>Personal Information *</label>
+                <div className="personal-info-grid">
+                  <input
+                    type="text"
+                    name="personalInfo.name"
+                    value={formData.personalInfo.name}
+                    onChange={handleInputChange}
+                    placeholder="Full Name"
+                    required
+                  />
+                  <input
+                    type="email"
+                    name="personalInfo.email"
+                    value={formData.personalInfo.email}
+                    onChange={handleInputChange}
+                    placeholder="Email Address"
+                    required
+                  />
+                  <input
+                    type="tel"
+                    name="personalInfo.phone"
+                    value={formData.personalInfo.phone}
+                    onChange={handleInputChange}
+                    placeholder="Phone Number"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* 3. Purpose of Meeting */}
+              <div className="form-group">
+                <label htmlFor="purpose">Purpose of Meeting *</label>
                 <select
-                  id="time"
-                  name="time"
-                  value={formData.time}
+                  id="purpose"
+                  name="purpose"
+                  value={formData.purpose}
                   onChange={handleInputChange}
                   required
                 >
-                  <option value="">Select time</option>
-                  <option value="09:00">09:00 AM</option>
-                  <option value="10:00">10:00 AM</option>
-                  <option value="11:00">11:00 AM</option>
-                  <option value="12:00">12:00 PM</option>
-                  <option value="14:00">02:00 PM</option>
-                  <option value="15:00">03:00 PM</option>
-                  <option value="16:00">04:00 PM</option>
-                  <option value="17:00">05:00 PM</option>
+                  <option value="">Select purpose</option>
+                  <option value="consultation">Legal Consultation</option>
+                  <option value="case_review">Case Review</option>
+                  <option value="documentation">Documentation</option>
+                  <option value="representation">Legal Representation</option>
+                  <option value="mediation">Mediation</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
 
+              {/* 4. Brief Case Summary */}
               <div className="form-group">
-                <label htmlFor="symptoms">Symptoms (Optional)</label>
+                <label htmlFor="caseSummary">Brief Case Summary *</label>
                 <textarea
-                  id="symptoms"
-                  name="symptoms"
-                  value={formData.symptoms}
+                  id="caseSummary"
+                  name="caseSummary"
+                  value={formData.caseSummary}
                   onChange={handleInputChange}
-                  placeholder="Describe your symptoms..."
+                  placeholder="Provide a brief summary of your legal matter..."
+                  rows="4"
+                  required
+                />
+              </div>
+
+              {/* 5. Relevant Documents */}
+              <div className="form-group">
+                <label htmlFor="documents">Relevant Documents</label>
+                <textarea
+                  id="documents"
+                  name="documents"
+                  value={formData.documents}
+                  onChange={handleInputChange}
+                  placeholder="List any relevant documents you have (e.g., contracts, court papers, evidence)..."
                   rows="3"
                 />
               </div>
 
+              {/* 6. Desired Outcome */}
               <div className="form-group">
-                <label htmlFor="notes">Additional Notes (Optional)</label>
+                <label htmlFor="desiredOutcome">Desired Outcome *</label>
                 <textarea
-                  id="notes"
-                  name="notes"
-                  value={formData.notes}
+                  id="desiredOutcome"
+                  name="desiredOutcome"
+                  value={formData.desiredOutcome}
                   onChange={handleInputChange}
-                  placeholder="Any additional information..."
+                  placeholder="What outcome are you seeking from this consultation?"
                   rows="3"
+                  required
                 />
               </div>
 
-              <div className="form-actions">
-                <button type="button" onClick={() => navigate("/doctors")} className="cancel-btn">
-                  Cancel
-                </button>
-                <button type="submit" className="book-btn">
-                  Book Consultation
-                </button>
+              {/* 7. Preferred Date & Time */}
+              <div className="form-group">
+                <label>Preferred Date & Time *</label>
+                <div className="datetime-grid">
+                  <input
+                    type="date"
+                    id="date"
+                    name="date"
+                    value={formData.date}
+                    onChange={handleInputChange}
+                    min={new Date().toISOString().split('T')[0]}
+                    required
+                  />
+                  <select
+                    id="time"
+                    name="time"
+                    value={formData.time}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Select time</option>
+                    <option value="09:00">09:00 AM</option>
+                    <option value="10:00">10:00 AM</option>
+                    <option value="11:00">11:00 AM</option>
+                    <option value="12:00">12:00 PM</option>
+                    <option value="14:00">02:00 PM</option>
+                    <option value="15:00">03:00 PM</option>
+                    <option value="16:00">04:00 PM</option>
+                    <option value="17:00">05:00 PM</option>
+                  </select>
+                </div>
               </div>
+
+              <button type="submit" className="submit-btn">
+                {loading ? "Booking..." : "Book Consultation"}
+              </button>
             </form>
           </div>
         </div>

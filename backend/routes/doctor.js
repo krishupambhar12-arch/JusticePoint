@@ -534,10 +534,23 @@ router.post("/book-appointment", auth, async (req, res) => {
       return res.status(403).json({ message: "Only clients can book appointments" });
     }
 
-    const { doctor_id, date, time, symptoms, notes } = req.body;
+    const { 
+      doctor_id, 
+      date, 
+      time, 
+      subject,
+      personalInfo,
+      purpose,
+      caseSummary,
+      documents,
+      desiredOutcome,
+      attorneyName,
+      attorneySpecialization,
+      attorneyFees
+    } = req.body;
 
-    if (!doctor_id || !date || !time) {
-      return res.status(400).json({ message: "Attorney ID, date, and time are required" });
+    if (!doctor_id || !date || !time || !subject || !personalInfo || !purpose || !caseSummary || !desiredOutcome) {
+      return res.status(400).json({ message: "All required fields must be filled" });
     }
 
     // Check if attorney exists
@@ -572,8 +585,15 @@ router.post("/book-appointment", auth, async (req, res) => {
       doctor_id,
       date,
       time,
-      symptoms: symptoms || "",
-      notes: notes || "",
+      subject,
+      personalInfo,
+      purpose,
+      caseSummary,
+      documents: documents || "",
+      desiredOutcome,
+      attorneyName,
+      attorneySpecialization,
+      attorneyFees,
       status: "Pending"
     });
 

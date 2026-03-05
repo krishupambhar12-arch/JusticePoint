@@ -146,7 +146,7 @@ const AttorneyLogin = () => {
         </form>
 
         <div className="register-link">
-          Don't have an account? <Link to="/attorney-signup">Register</Link>
+          Don't have an account? <Link to="/attorney/signup">Register</Link>
         </div>
       </div>
     </div>
