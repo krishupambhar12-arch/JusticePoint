@@ -42,6 +42,7 @@ import ClientLabTests from "./pages/ClientLabTests";
 import Services from "./pages/Services";
 import GoogleCallback from "./pages/GoogleCallback";
 import ProfileRedirect from "./pages/ProfileRedirect";
+import AuthCallback from "./pages/AuthCallback";
 
 function App() {
   return (
@@ -58,6 +59,7 @@ function App() {
         <Route path="/attorney-forgot-password" element={<AttorneyForgotPassword />} />
         <Route path="/attorney" element={<Navigate to="/attorney-login" replace />} />
         <Route path="/user" element={<GoogleCallback />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/profile" element={<ProfileRedirect />} />
         <Route path="/attorney/details" element={<AttorneyDetailsForm />} />
         <Route path="/attorney/dashboard" element={<AttorneyDashboard />} />

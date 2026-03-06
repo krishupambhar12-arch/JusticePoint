@@ -4,9 +4,27 @@ const app = express()
 const port = process.env.PORT || 5000;
 const cors = require("cors");
 const Path = require("path");
+// TODO: Add passport imports after fixing OAuth setup
+// const passport = require("passport");
+// const session = require("express-session");
 
 // Load environment variables
 require('dotenv').config();
+
+// TODO: Enable Passport configuration after fixing OAuth setup
+// require('./config/passport')(passport);
+
+// TODO: Enable session middleware for Passport after fixing OAuth setup
+// app.use(session({
+//   secret: process.env.JWT_SECRET || 'secretKey',
+//   resave: false,
+//   saveUninitialized: false,
+//   cookie: { secure: false } // Set to true in production with HTTPS
+// }));
+
+// TODO: Initialize Passport after fixing OAuth setup
+// app.use(passport.initialize());
+// app.use(passport.session());
 
 
 const userRoute = require("./routes/userRoutes");

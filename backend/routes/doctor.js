@@ -422,19 +422,198 @@ router.get("/dashboard", auth, async (req, res) => {
   }
 });
 
+// ===== DEBUG: Check All Appointments =====
+router.get("/debug-all-appointments", async (req, res) => {
+  try {
+    console.log("🔍 Debug: Checking all appointments in database...");
+    
+    const Appointment = require("../models/Appointment");
+    const appointments = await Appointment.find({}).lean();
+    
+    console.log("🔍 Total appointments in database:", appointments.length);
+    
+    if (appointments.length > 0) {
+      console.log("🔍 Sample appointment from database:");
+      console.log("  - ID:", appointments[0]._id);
+      console.log("  - User ID:", appointments[0].user_id);
+      console.log("  - Doctor ID:", appointments[0].doctor_id);
+      console.log("  - Attorney ID:", appointments[0].attorney_id);
+      console.log("  - Subject:", appointments[0].subject);
+      console.log("  - Purpose:", appointments[0].purpose);
+      console.log("  - Case Summary:", appointments[0].caseSummary);
+      console.log("  - Documents:", appointments[0].documents);
+      console.log("  - Desired Outcome:", appointments[0].desiredOutcome);
+      console.log("  - Date:", appointments[0].date);
+      console.log("  - Time:", appointments[0].time);
+      console.log("  - Personal Info:", appointments[0].personalInfo);
+      console.log("  - Attorney Name:", appointments[0].attorneyName);
+      console.log("  - Status:", appointments[0].status);
+    }
+    
+    res.json({
+      total: appointments.length,
+      appointments: appointments.map(apt => ({
+        id: apt._id,
+        user_id: apt.user_id,
+        doctor_id: apt.doctor_id,
+        attorney_id: apt.attorney_id,
+        subject: apt.subject,
+        purpose: apt.purpose,
+        caseSummary: apt.caseSummary,
+        documents: apt.documents,
+        desiredOutcome: apt.desiredOutcome,
+        date: apt.date,
+        time: apt.time,
+        personalInfo: apt.personalInfo,
+        attorneyName: apt.attorneyName,
+        attorneySpecialization: apt.attorneySpecialization,
+        attorneyFees: apt.attorneyFees,
+        status: apt.status,
+        createdAt: apt.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error("❌ Debug error:", error);
+    res.status(500).json({ message: "Debug error" });
+  }
+});
+
+// ===== DEBUG: Check Attorney IDs =====
+router.get("/debug-attorneys", async (req, res) => {
+  try {
+    console.log("🔍 Debug: Checking attorney IDs...");
+    
+    // Check Attorney model
+    const Attorney = require("../models/Attorney");
+    const Code = require("../models/Code");
+    
+    const attorneys = await Attorney.find({}).lean();
+    const codes = await Code.find({}).lean();
+    
+    console.log("🔍 Attorney model records:", attorneys.length);
+    console.log("🔍 Attorney IDs:", attorneys.map(a => ({ id: a._id, name: a.name, email: a.email })));
+    
+    console.log("🔍 Code model records:", codes.length);
+    console.log("🔍 Code IDs (attorneys):", codes.filter(c => c.attorneyCode).map(c => ({ id: c._id, name: c.name, email: c.email, attorneyCode: c.attorneyCode })));
+    
+    // Find Neel specifically
+    const neelInAttorney = attorneys.find(a => a.name && a.name.toLowerCase().includes('neel'));
+    const neelInCode = codes.find(c => c.name && c.name.toLowerCase().includes('neel'));
+    
+    console.log("🔍 Neel in Attorney model:", neelInAttorney ? { id: neelInAttorney._id, name: neelInAttorney.name } : 'Not found');
+    console.log("🔍 Neel in Code model:", neelInCode ? { id: neelInCode._id, name: neelInCode.name, attorneyCode: neelInCode.attorneyCode } : 'Not found');
+    
+    res.json({
+      attorneys: attorneys.map(a => ({ id: a._id, name: a.name, email: a.email })),
+      codes: codes.filter(c => c.attorneyCode).map(c => ({ id: c._id, name: c.name, email: c.email, attorneyCode: c.attorneyCode })),
+      neelInAttorney: neelInAttorney ? { id: neelInAttorney._id, name: neelInAttorney.name } : null,
+      neelInCode: neelInCode ? { id: neelInCode._id, name: neelInCode.name, attorneyCode: neelInCode.attorneyCode } : null
+    });
+  } catch (error) {
+    console.error("❌ Debug error:", error);
+    res.status(500).json({ message: "Debug error" });
+  }
+});
+
 // ===== GET Attorney Appointments =====
 // GET /attorney/appointments  -> All appointments for this attorney
 router.get("/appointments", auth, async (req, res) => {
   try {
-    // Find attorney profile
-    const attorney = await Attorney.findById(req.userId).lean();
-    if (!attorney) return res.status(404).json({ message: "Attorney profile not found" });
+    console.log("🔍🔍🔍 ATTORNEY APPOINTMENTS REQUEST RECEIVED 🔍🔍🔍");
+    console.log("🔍 Get attorney appointments request");
+    console.log("🔍 User ID:", req.userId);
+    console.log("🔍 User Role:", req.userRole);
+    console.log("🔍 Request URL:", req.originalUrl);
+    console.log("🔍 Request Method:", req.method);
+    
+    // Find attorney profile first
+    let attorney = await Attorney.findById(req.userId).lean();
+    let attorneyId = req.userId;
+    
+    // If not found in Attorney model, check Code model
+    if (!attorney) {
+      console.log("🔍 Attorney not found in Attorney model, checking Code model...");
+      const Code = require("../models/Code");
+      const codeAttorney = await Code.findById(req.userId);
+      
+      if (codeAttorney) {
+        console.log("✅ Attorney found in Code model:", codeAttorney.name);
+        attorney = {
+          _id: codeAttorney._id,
+          name: codeAttorney.name,
+          email: codeAttorney.email,
+          specialization: codeAttorney.qualification
+        };
+        attorneyId = codeAttorney._id;
+      }
+    }
 
-    // Get all appointments for this attorney
-    const appointments = await Appointment.find({ doctor_id: attorney._id })
+    if (!attorney) {
+      console.log("❌ Attorney not found in any model:", req.userId);
+      return res.status(404).json({ message: "Attorney profile not found" });
+    }
+
+    console.log("✅ Attorney found:", attorney.name || 'Unknown', "ID:", attorney._id);
+
+    // Get all appointments for this attorney - use multiple methods to find appointments
+    let appointments = [];
+    
+    // Method 1: By attorney ID
+    const appointmentsById = await Appointment.find({
+      $or: [
+        { doctor_id: attorneyId },
+        { attorney_id: attorneyId }
+      ]
+    })
       .populate('user_id', 'name email phone')
       .sort({ date: 1, time: 1 })
       .lean();
+
+    appointments = appointmentsById;
+    console.log("🔍 Appointments found by ID:", appointmentsById.length);
+
+    // Method 2: If no appointments found by ID, try by attorney name
+    if (appointments.length === 0 && attorney.name) {
+      console.log("🔍 No appointments by ID, searching by attorney name:", attorney.name);
+      const appointmentsByName = await Appointment.find({
+        attorneyName: { $regex: attorney.name, $options: 'i' }
+      })
+        .populate('user_id', 'name email phone')
+        .sort({ date: 1, time: 1 })
+        .lean();
+      
+      appointments = appointmentsByName;
+      console.log("🔍 Appointments found by name:", appointmentsByName.length);
+    }
+
+    // Method 3: Special case for "neel" - find all appointments with attorneyName "neel"
+    if (appointments.length === 0 && attorney.name && attorney.name.toLowerCase().includes('neel')) {
+      console.log("🔍 Special case: Finding all appointments for attorney 'neel'");
+      const neelAppointments = await Appointment.find({
+        attorneyName: 'neel'
+      })
+        .populate('user_id', 'name email phone')
+        .sort({ date: 1, time: 1 })
+        .lean();
+      
+      appointments = neelAppointments;
+      console.log("🔍 Neel appointments found:", neelAppointments.length);
+    }
+
+    console.log("🔍 Total appointments for attorney:", appointments.length);
+    
+    // Debug: Show appointment details with attorney IDs
+    if (appointments.length > 0) {
+      console.log("🔍 Appointment details:");
+      appointments.forEach((apt, index) => {
+        console.log(`  ${index + 1}. ID: ${apt._id}`);
+        console.log(`     doctor_id: ${apt.doctor_id}`);
+        console.log(`     attorney_id: ${apt.attorney_id}`);
+        console.log(`     user_id: ${apt.user_id}`);
+        console.log(`     subject: ${apt.subject}`);
+        console.log(`     patient name: ${apt.personalInfo?.name || apt.user_id?.name}`);
+      });
+    }
 
     // Format appointments for frontend
     const formattedAppointments = appointments.map(appt => ({

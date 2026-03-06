@@ -52,7 +52,7 @@ const GoogleCallback = () => {
               localStorage.setItem('role', response.data.user.role);
               localStorage.setItem('user', JSON.stringify(response.data.user));
 
-              setMessage(`🎉 Welcome, ${response.data.user.name}! Login successful.`);
+              setMessage(`🎉 Google login successful! Welcome, ${response.data.user.name}! Redirecting to client panel...`);
               setIsSuccess(true);
 
               // Check if this is running in a popup window
@@ -71,10 +71,10 @@ const GoogleCallback = () => {
                   window.close();
                 }, 1000);
               } else {
-                // Normal flow for non-popup
+                // Normal flow for non-popup - always redirect to client panel
                 setTimeout(() => {
-                  console.log('🔄 Navigating to profile page');
-                  navigate('/profile');
+                  console.log('🔄 Navigating to client dashboard');
+                  navigate('/client/dashboard');
                 }, 2000);
               }
             } else {

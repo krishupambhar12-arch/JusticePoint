@@ -21,22 +21,56 @@ const AttorneyAppointments = () => {
     }
 
     try {
+      console.log("🔍 Fetching attorney appointments...");
       const res = await fetch(API.ATTORNEY_APPOINTMENTS, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
+      console.log("🔍 Attorney appointments response:", data);
+      console.log("🔍 Number of appointments received:", data.appointments?.length || 0);
+      
+      if (data.appointments && data.appointments.length > 0) {
+        console.log("🔍 Latest appointment:", data.appointments[0]);
+        console.log("🔍 All appointment details:", data.appointments.map(apt => ({
+          id: apt.id,
+          clientName: apt.patient?.name || apt.client,
+          subject: apt.subject,
+          purpose: apt.purpose,
+          date: apt.date,
+          time: apt.time,
+          status: apt.status
+        })));
+      }
+      
       if (!res.ok) throw new Error(data.message || "Failed to load appointments");
 
+      console.log("🔍 Setting attorney appointments:", data.appointments);
+      console.log("🔍 Appointments data type:", typeof data.appointments);
+      console.log("🔍 Appointments is array:", Array.isArray(data.appointments));
+      console.log("🔍 First appointment details:", data.appointments?.[0]);
+      
       setAppointments(data.appointments || []);
     } catch (e) {
+      console.error("❌ Error fetching appointments:", e);
       setError(e.message);
     } finally {
       setLoading(false);
     }
   };
 
+  // Debug: Log appointments state changes
+  useEffect(() => {
+    console.log("🔍 Appointments state updated:", appointments);
+    console.log("🔍 Appointments length:", appointments.length);
+  }, [appointments]);
+
   useEffect(() => {
     fetchAppointments();
+    
+    // Auto-refresh every 30 seconds to get latest appointments
+    const interval = setInterval(fetchAppointments, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const updateAppointmentStatus = async (appointmentId, newStatus) => {
@@ -69,7 +103,22 @@ const AttorneyAppointments = () => {
     <div className="appointments-page">
       <Sidebar />
       <div className="appointments-content">
-        <h1>Appointments</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h1>Appointments</h1>
+          <button 
+            onClick={fetchAppointments}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Refresh
+          </button>
+        </div>
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '20px' }}>
@@ -84,75 +133,102 @@ const AttorneyAppointments = () => {
             <p>No appointments found.</p>
           </div>
         ) : (
-          <table className="appointments-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Client Details</th>
-                <th>Date & Time</th>
-                <th>Subject</th>
-                <th>Purpose</th>
-                <th>Case Summary</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {appointments.map((appt) => (
-                <tr key={appt.id}>
-                  <td>{appt.id}</td>
-                  <td>
-                    <div style={{ maxWidth: '200px' }}>
-                      <strong>{appt.patient?.name || appt.client || 'Unknown Client'}</strong>
-                      <br />
-                      <small>{appt.patient?.email || appt.clientEmail || ''}</small>
-                      <br />
-                      <small>{appt.patient?.phone || appt.clientPhone || ''}</small>
-                    </div>
-                  </td>
-                  <td>
-                    <div>
-                      <strong>{appt.date}</strong>
-                      <br />
-                      <small>{appt.time}</small>
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ maxWidth: '150px' }}>
-                      <small>{appt.subject || 'N/A'}</small>
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ maxWidth: '120px' }}>
-                      <small>{appt.purpose || 'N/A'}</small>
-                    </div>
-                  </td>
-                  <td>
-                    <div style={{ maxWidth: '200px' }}>
-                      <small>{appt.caseSummary ? `${appt.caseSummary.substring(0, 50)}...` : 'N/A'}</small>
-                    </div>
-                  </td>
-                  <td className={`status ${appt.status.toLowerCase()}`}>
-                    {appt.status}
-                  </td>
-                  <td>
-                    <select 
-                      value={appt.status}
-                      onChange={(e) => updateAppointmentStatus(appt.id, e.target.value)}
-                      className="status-select"
-                      disabled={actionLoading.updating === appt.id}
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Confirmed">Confirmed</option>
-                      <option value="Completed">Completed</option>
-                      <option value="Cancelled">Cancelled</option>
-                      <option value="Rejected">Rejected</option>
-                    </select>
-                  </td>
+          <>
+            <p style={{ marginBottom: '10px', fontSize: '14px', color: '#666' }}>
+              Found {appointments.length} appointments
+            </p>
+            <table className="appointments-table">
+              <thead>
+                <tr>
+                  <th>Client Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Subject Line</th>
+                  <th>Purpose of Meeting</th>
+                  <th>Brief Case Summary</th>
+                  <th>Relevant Documents</th>
+                  <th>Desired Outcome</th>
+                  <th>Preferred Date & Time</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {appointments && appointments.length > 0 ? (
+                  appointments.map((appt, index) => {
+                    console.log(`🔍 Rendering appointment ${index + 1}:`, {
+                      id: appt.id,
+                      clientName: appt.patient?.name || appt.client,
+                      email: appt.patient?.email || appt.clientEmail,
+                      subject: appt.subject,
+                      purpose: appt.purpose
+                    });
+                    
+                    return (
+                      <tr key={appt.id} style={{ border: '1px solid #ddd' }}>
+                        <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                          <strong>{appt.patient?.name || appt.client || 'Unknown Client'}</strong>
+                        </td>
+                        <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                          <small>{appt.patient?.email || appt.clientEmail || 'N/A'}</small>
+                        </td>
+                        <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                          <small>{appt.patient?.phone || appt.clientPhone || 'N/A'}</small>
+                        </td>
+                        <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                          <small>{appt.subject || 'N/A'}</small>
+                        </td>
+                        <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                          <small>{appt.purpose || 'N/A'}</small>
+                        </td>
+                        <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                          <small>{appt.caseSummary ? `${appt.caseSummary.substring(0, 80)}...` : 'N/A'}</small>
+                        </td>
+                        <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                          <small>{appt.documents || 'N/A'}</small>
+                        </td>
+                        <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                          <small>{appt.desiredOutcome ? `${appt.desiredOutcome.substring(0, 60)}...` : 'N/A'}</small>
+                        </td>
+                        <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                          <div>
+                            <strong>{appt.date}</strong>
+                            <br />
+                            <small>{appt.time}</small>
+                          </div>
+                        </td>
+                        <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                          <span className={`status ${appt.status?.toLowerCase() || 'pending'}`}>
+                            {appt.status || 'Pending'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                          <select 
+                            value={appt.status || 'Pending'}
+                            onChange={(e) => updateAppointmentStatus(appt.id, e.target.value)}
+                            style={{ padding: '5px', borderRadius: '4px' }}
+                            disabled={actionLoading.updating === appt.id}
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                            <option value="Rejected">Rejected</option>
+                          </select>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan="10" style={{ textAlign: 'center', padding: '20px' }}>
+                      No appointments to display
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </>
         )}
       </div>
     </div>

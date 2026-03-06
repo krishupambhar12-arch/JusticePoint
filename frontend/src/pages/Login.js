@@ -17,90 +17,22 @@ const Login = () => {
 
   const handleSocialLogin = async (provider) => {
     try {
-      let authUrl;
-      const popupWidth = 500;
-      const popupHeight = 600;
-      const left = (window.innerWidth - popupWidth) / 2;
-      const top = (window.innerHeight - popupHeight) / 2;
-
       switch (provider) {
         case 'google':
-          authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-            `client_id=714671509629-2ue74rqbh90ngtjtfi8aspa740tlid27.apps.googleusercontent.com&` +
-            `redirect_uri=${encodeURIComponent('http://localhost:3000/user')}&` +
-            `response_type=code&` +
-            `scope=${encodeURIComponent('https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid')}&` +
-            `access_type=offline&` +
-            `prompt=consent&` +
-            `include_granted_scopes=true`;
-          break;
+          // Direct redirect to backend Google OAuth route
+          window.location.href = 'http://localhost:5000/user/auth/google';
+          return;
         case 'facebook':
-          authUrl = `https://www.facebook.com/v18.0/dialog/oauth?` +
-            `client_id=1714010942910521&` +
-            `redirect_uri=${encodeURIComponent(window.location.origin + '/auth/facebook/callback')}&` +
-            `scope=email,public_profile`;
-          break;
+          // Direct redirect to backend Facebook OAuth route
+          window.location.href = 'http://localhost:5000/user/auth/facebook';
+          return;
         case 'linkedin':
-          authUrl = `https://www.linkedin.com/oauth/v2/authorization?` +
-            `client_id=865holnprw1p7h&` +
-            `redirect_uri=${encodeURIComponent(window.location.origin + '/auth/linkedin/callback')}&` +
-            `response_type=code&` +
-            `scope=openid profile email`;
-          break;
+          // Direct redirect to backend LinkedIn OAuth route
+          window.location.href = 'http://localhost:5000/user/auth/linkedin';
+          return;
         default:
           return;
       }
-
-      // Open popup for OAuth
-      const popup = window.open(
-        authUrl,
-        'socialLogin',
-        `width=${popupWidth},height=${popupHeight},left=${left},top=${top},scrollbars=yes,resizable=yes`
-      );
-
-      // Listen for messages from popup
-      const messageHandler = async (event) => {
-        if (event.origin !== window.location.origin) return;
-
-        if (event.data.type === 'social-auth-success') {
-          popup.close();
-          window.removeEventListener('message', messageHandler);
-
-          // Check if user is a Client - only allow Client users
-          const userRole = event.data.user.role;
-          if (userRole !== "Client") {
-            alert('❌ Access denied. This login is for clients only. Attorneys should use the attorney login page.');
-            return;
-          }
-
-          // Save token and role
-          localStorage.setItem('token', event.data.token);
-          localStorage.setItem('role', event.data.user.role);
-
-          // Show success alert with user name
-          const userName = event.data.user.name || event.data.user.email;
-          alert(`🎉 Welcome, ${userName}! Login successful.`);
-
-          // Navigate to client dashboard only
-          navigate('/client/dashboard');
-        } else if (event.data.type === 'social-auth-error') {
-          popup.close();
-          window.removeEventListener('message', messageHandler);
-          console.error('Social auth error:', event.data.error);
-          alert('Social login failed: ' + event.data.error);
-        }
-      };
-
-      window.addEventListener('message', messageHandler);
-
-      // Check if popup was blocked
-      const checkClosed = setInterval(() => {
-        if (popup.closed) {
-          clearInterval(checkClosed);
-          window.removeEventListener('message', messageHandler);
-        }
-      }, 1000);
-
     } catch (error) {
       console.error('Social login error:', error);
       alert('Social login failed. Please try again.');
