@@ -64,3 +64,46 @@
   color: green;
   font-weight: 600;
 }
+
+.status.pending {
+  color: #ffc107;
+  font-weight: 600;
+}
+
+.status.confirmed {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.status.cancelled {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.status.rejected {
+  color: #6c757d;
+  font-weight: 600;
+}
+
+/* Status Select Dropdown */
+.status-select {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #fff;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+}
+
+.status-select:focus {
+  outline: none;
+  border-color: var(--color-regular-purple);
+  box-shadow: 0 0 0 2px rgba(128, 0, 128, 0.1);
+}
+
+.status-select:disabled {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+  opacity: 0.6;
+}

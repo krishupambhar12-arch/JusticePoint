@@ -12,6 +12,7 @@ export const API = {
   ATTORNEY_DASHBOARD: `${BASE_URL}/attorney/dashboard`,
   ATTORNEY_PROFILE_UPDATE: `${BASE_URL}/attorney/profile`,
   ATTORNEY_APPOINTMENTS: `${BASE_URL}/attorney/appointments`,
+  ATTORNEY_UPDATE_APPOINTMENT_STATUS: `${BASE_URL}/attorney/appointments`,
   ALL_ATTORNEYS: `${BASE_URL}/attorney/all`,
   BOOK_APPOINTMENT: `${BASE_URL}/attorney/book-appointment`,
   // Client APIs

@@ -9,8 +9,7 @@ const path = require("path");
 const jwt = require("jsonwebtoken");
 const Consultation = require("../models/Consultation");
 const ConsultationMessage = require("../models/ConsultationMessage");
-let Appointment;
-try { Appointment = require("../models/Appointment"); } catch {}
+const Appointment = require("../models/Appointment");
 
 // ===== Multer setup for file upload =====
 const storage = multer.diskStorage({
@@ -366,35 +365,33 @@ router.get("/dashboard", auth, async (req, res) => {
     let upcomingAppointments = 0;
     let earnings = 0;
 
-    if (Appointment) {
-      const start = new Date(); start.setHours(0,0,0,0);
-      const end = new Date();   end.setHours(23,59,59,999);
+    const start = new Date(); start.setHours(0,0,0,0);
+    const end = new Date();   end.setHours(23,59,59,999);
 
-      // today count
-      todayCount = await Appointment.countDocuments({
-        doctor_id: attorney._id,
-        date: { $gte: start, $lte: end },
-        status: { $ne: "Cancelled" }
-      });
+    // today count
+    todayCount = await Appointment.countDocuments({
+      doctor_id: attorney._id,
+      date: { $gte: start, $lte: end },
+      status: { $ne: "Cancelled" }
+    });
 
-      // total unique clients seen by this attorney
-      const uniqueClients = await Appointment.distinct("user_id", { doctor_id: attorney._id });
-      totalClients = uniqueClients.length;
+    // total unique clients seen by this attorney
+    const uniqueClients = await Appointment.distinct("user_id", { doctor_id: attorney._id });
+    totalClients = uniqueClients.length;
 
-      // upcoming appointments from now (status pending/confirmed)
-      upcomingAppointments = await Appointment.countDocuments({
-        doctor_id: attorney._id,
-        date: { $gte: new Date() },
-        status: { $in: ["Pending", "Confirmed"] }
-      });
+    // upcoming appointments from now (status pending/confirmed)
+    upcomingAppointments = await Appointment.countDocuments({
+      doctor_id: attorney._id,
+      date: { $gte: new Date() },
+      status: { $in: ["Pending", "Confirmed"] }
+    });
 
-      // simple earnings estimate = total completed appointments * fees
-      const completedCount = await Appointment.countDocuments({
-        doctor_id: attorney._id,
-        status: { $in: ["Completed", "Done", "Approved"] }
-      });
-      earnings = completedCount * (attorney.fees || 0);
-    }
+    // simple earnings estimate = total completed appointments * fees
+    const completedCount = await Appointment.countDocuments({
+      doctor_id: attorney._id,
+      status: { $in: ["Completed", "Done", "Approved"] }
+    });
+    earnings = completedCount * (attorney.fees || 0);
 
     res.json({
       attorney: {
@@ -434,23 +431,34 @@ router.get("/appointments", auth, async (req, res) => {
     if (!attorney) return res.status(404).json({ message: "Attorney profile not found" });
 
     // Get all appointments for this attorney
-    let appointments = [];
-    if (Appointment) {
-      appointments = await Appointment.find({ doctor_id: attorney._id })
-        .populate('user_id', 'name email phone')
-        .sort({ date: 1, time: 1 })
-        .lean();
-    }
+    const appointments = await Appointment.find({ doctor_id: attorney._id })
+      .populate('user_id', 'name email phone')
+      .sort({ date: 1, time: 1 })
+      .lean();
 
     // Format appointments for frontend
     const formattedAppointments = appointments.map(appt => ({
       id: appt._id,
+      patient: {
+        name: appt.personalInfo?.name || appt.user_id?.name || "Unknown Client",
+        email: appt.personalInfo?.email || appt.user_id?.email || "",
+        phone: appt.personalInfo?.phone || appt.user_id?.phone || ""
+      },
       client: appt.user_id?.name || "Unknown Client",
       clientEmail: appt.user_id?.email || "",
       clientPhone: appt.user_id?.phone || "",
       date: new Date(appt.date).toISOString().split('T')[0],
       time: appt.time,
       status: appt.status,
+      subject: appt.subject,
+      purpose: appt.purpose,
+      caseSummary: appt.caseSummary,
+      documents: appt.documents || "",
+      desiredOutcome: appt.desiredOutcome,
+      attorneyName: appt.attorneyName,
+      attorneySpecialization: appt.attorneySpecialization,
+      attorneyFees: appt.attorneyFees,
+      personalInfo: appt.personalInfo,
       createdAt: appt.createdAt
     }));
 
@@ -528,9 +536,19 @@ router.get("/all", async (req, res) => {
 
 // ===== POST Book Appointment =====
 router.post("/book-appointment", auth, async (req, res) => {
+  console.log("🔍🔍🔍 BOOK APPOINTMENT ENDPOINT HIT!!!");
+  console.log("🔍 Request method:", req.method);
+  console.log("🔍 Request URL:", req.originalUrl);
+  console.log("🔍 Request headers:", req.headers);
+  
   try {
+    console.log("🔍 Book appointment request received");
+    console.log("🔍 User role:", req.userRole);
+    console.log("🔍 User ID:", req.userId);
+    
     // Check if user is a client
     if (req.userRole !== "Client") {
+      console.log("❌ Only clients can book appointments");
       return res.status(403).json({ message: "Only clients can book appointments" });
     }
 
@@ -549,15 +567,50 @@ router.post("/book-appointment", auth, async (req, res) => {
       attorneyFees
     } = req.body;
 
+    console.log("🔍 Appointment data:", {
+      doctor_id,
+      date,
+      time,
+      subject,
+      attorneyName,
+      attorneySpecialization,
+      attorneyFees
+    });
+
     if (!doctor_id || !date || !time || !subject || !personalInfo || !purpose || !caseSummary || !desiredOutcome) {
+      console.log("❌ Missing required fields");
       return res.status(400).json({ message: "All required fields must be filled" });
     }
 
-    // Check if attorney exists
-    const attorney = await Attorney.findById(doctor_id);
+    // Check if attorney exists in Attorney model first
+    let attorney = await Attorney.findById(doctor_id);
+    
+    // If not found in Attorney model, check Code model
     if (!attorney) {
+      console.log("🔍 Attorney not found in Attorney model, checking Code model...");
+      const Code = require("../models/Code");
+      const codeAttorney = await Code.findById(doctor_id);
+      
+      if (codeAttorney) {
+        console.log("✅ Attorney found in Code model:", codeAttorney.name);
+        // Create a temporary attorney object for booking
+        attorney = {
+          _id: codeAttorney._id,
+          attorneyName: codeAttorney.name,
+          attorneyEmail: codeAttorney.email,
+          attorneyPhone: codeAttorney.phone || "",
+          specialization: codeAttorney.qualification || "General Practice",
+          fees: 100 // Default fees since Code model doesn't have fees field
+        };
+      }
+    }
+
+    if (!attorney) {
+      console.log("❌ Attorney not found in any model:", doctor_id);
       return res.status(404).json({ message: "Attorney not found" });
     }
+
+    console.log("✅ Attorney found:", attorney.attorneyName || attorney.name);
 
     // Check if user is trying to book appointment with themselves (if they are an attorney)
     if (req.userRole === "Attorney") {
@@ -576,12 +629,14 @@ router.post("/book-appointment", auth, async (req, res) => {
     });
 
     if (existingAppointment) {
+      console.log("❌ Time slot already booked");
       return res.status(400).json({ message: "This time slot is already booked" });
     }
 
     // Create new appointment
     const appointment = new Appointment({
       user_id: req.userId,
+      attorney_id: doctor_id, // Add attorney_id field
       doctor_id,
       date,
       time,
@@ -597,9 +652,27 @@ router.post("/book-appointment", auth, async (req, res) => {
       status: "Pending"
     });
 
-    await appointment.save();
+    console.log("🔍 Saving appointment with all fields...");
+    console.log("🔍 Appointment data preview:", {
+      user_id: req.userId,
+      attorney_id: doctor_id,
+      doctor_id,
+      date,
+      time,
+      subject,
+      personalInfo,
+      purpose,
+      caseSummary,
+      documents: documents || "",
+      desiredOutcome,
+      attorneyName,
+      attorneySpecialization,
+      attorneyFees,
+      status: "Pending"
+    });
     
-
+    await appointment.save();
+    console.log("✅ Appointment saved successfully with all fields:", appointment._id);
 
     res.status(201).json({
       message: "Appointment booked successfully",
@@ -612,8 +685,59 @@ router.post("/book-appointment", auth, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Error booking appointment:", error);
+    console.error("❌ Error booking appointment:", error);
     res.status(500).json({ message: "Failed to book appointment" });
+  }
+});
+
+// ===== UPDATE Appointment Status =====
+router.put("/appointments/:appointmentId/status", auth, async (req, res) => {
+  try {
+    console.log("🔍 Update appointment status request");
+    console.log("🔍 User role:", req.userRole);
+    console.log("🔍 User ID:", req.userId);
+    
+    const { appointmentId } = req.params;
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ message: "Status is required" });
+    }
+
+    // Find the appointment
+    const appointment = await Appointment.findById(appointmentId);
+    if (!appointment) {
+      console.log("❌ Appointment not found:", appointmentId);
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    // Check if this appointment belongs to this attorney
+    const attorney = await Attorney.findById(req.userId);
+    if (!attorney) {
+      return res.status(404).json({ message: "Attorney not found" });
+    }
+
+    if (appointment.doctor_id.toString() !== attorney._id.toString()) {
+      console.log("❌ Unauthorized: Appointment does not belong to this attorney");
+      return res.status(403).json({ message: "You can only update your own appointments" });
+    }
+
+    // Update appointment status
+    appointment.status = status;
+    await appointment.save();
+
+    console.log("✅ Appointment status updated:", appointmentId, "->", status);
+
+    res.json({
+      message: "Appointment status updated successfully",
+      appointment: {
+        id: appointment._id,
+        status: appointment.status
+      }
+    });
+  } catch (error) {
+    console.error("❌ Error updating appointment status:", error);
+    res.status(500).json({ message: "Failed to update appointment status" });
   }
 });
 
