@@ -29,16 +29,12 @@ import AdminPatients from "./pages/AdminPatients";
 import AdminDoctors from "./pages/AdminDoctors";
 import AdminFeedback from "./pages/AdminFeedback";
 import AdminServices from "./pages/AdminServices";
-import AdminLabTestBookings from "./pages/AdminLabTestBookings";
 import ClientConsultation from "./pages/ClientConsultation";
 import AttorneyConsultation from "./pages/AttorneyConsultation";
 import AIAdvisor from "./pages/AIAdvisor";
 import AdminConsultations from "./pages/AdminConsultations";
 import ClientFeedback from "./pages/ClientFeedback";
 import ForgotPassword from "./pages/ForgotPassword";
-import LabTestListing from "./pages/LabTestListing";
-import BookLabTest from "./pages/BookLabTest";
-import ClientLabTests from "./pages/ClientLabTests";
 import Services from "./pages/Services";
 import GoogleCallback from "./pages/GoogleCallback";
 import ProfileRedirect from "./pages/ProfileRedirect";
@@ -69,12 +65,9 @@ function App() {
         <Route path="/client/dashboard" element={<ClientDashboard />} />
         <Route path="/client/profile" element={<ClientProfile />} />
         <Route path="/client/appointments" element={<ClientAppointments/>} />
-        <Route path="/client/feedback" element={<ClientFeedback/>} />
-        <Route path="/client/lab-tests" element={<ClientLabTests/>} />
         <Route path="/client/consultation" element={<ClientConsultation/>} />
+        <Route path="/client/feedback" element={<ClientFeedback/>} />
         <Route path="/services" element={<Services/>} />
-        <Route path="/lab-tests" element={<LabTestListing/>} />
-        <Route path="/book-lab-test/:testId" element={<BookLabTest/>} />
         <Route path="/about" element={<About/>} />
         <Route path="/contact" element={<Contact/>} />
         <Route path="/attorneys" element={<AttorneyListing/>} />
@@ -109,11 +102,6 @@ function App() {
         <Route path="/admin/services" element={
           <ProtectedAdminRoute>
             <AdminServices/>
-          </ProtectedAdminRoute>
-        } />
-        <Route path="/admin/lab-test-bookings" element={
-          <ProtectedAdminRoute>
-            <AdminLabTestBookings/>
           </ProtectedAdminRoute>
         } />
         <Route path="/admin/consultations" element={

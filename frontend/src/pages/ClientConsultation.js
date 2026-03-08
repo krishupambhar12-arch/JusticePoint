@@ -211,7 +211,7 @@ const ClientConsultation = () => {
 
           {showAIAdvisor && (
             <div className="ai-advisor-panel">
-              <h3>AI Health Advisor</h3>
+              <h3>AI Legal Advisor</h3>
               <p className="ai-description">Ask me about your health concerns for quick advice</p>
               <div className="ai-input-section">
                 <textarea
@@ -269,6 +269,8 @@ const ClientConsultation = () => {
                       <div className="doctor-info">
                         <strong>{attorney.name}</strong>
                         <small>{attorney.specialization}</small>
+                        <small>Experience: {attorney.experience} years</small>
+                        <small>Fees: ${attorney.fees}</small>
                       </div>
                       {selectedDoctor?.id === attorney.id && (
                         <button
@@ -301,8 +303,8 @@ const ClientConsultation = () => {
                   onClick={() => setSelectedConsultation(consultation)}
                 >
                   <div className="consultation-info">
-                    <strong>Attorney {consultation.doctor_name}</strong>
-                    <small>{consultation.specialization}</small>
+                    <strong>Attorney {consultation.doctor_name || consultation.attorney?.name || 'Unknown'}</strong>
+                    <small>{consultation.specialization || consultation.attorney?.specialization || 'General Practice'}</small>
                     <span className={`status ${consultation.status.toLowerCase()}`}>
                       {consultation.status}
                     </span>
@@ -318,8 +320,8 @@ const ClientConsultation = () => {
             <>
               <div className="chat-header">
                 <div>
-                  <h3>Attorney {selectedConsultation.doctor_name}</h3>
-                  <small>{selectedConsultation.specialization}</small>
+                  <h3>Attorney {selectedConsultation.doctor_name || selectedConsultation.attorney?.name || 'Unknown'}</h3>
+                  <small>{selectedConsultation.specialization || selectedConsultation.attorney?.specialization || 'General Practice'}</small>
                 </div>
                 <span className={`status ${selectedConsultation.status.toLowerCase()}`}>
                   {selectedConsultation.status}

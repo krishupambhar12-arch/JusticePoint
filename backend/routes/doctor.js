@@ -529,11 +529,25 @@ router.get("/appointments", auth, async (req, res) => {
     // Find attorney profile first
     let attorney = await Attorney.findById(req.userId).lean();
     let attorneyId = req.userId;
+    let codeAttorneyId = null;
     
-    // If not found in Attorney model, check Code model
+    // Always try to find the corresponding Code record based on email
+    const Code = require("../models/Code");
+    if (attorney && attorney.attorneyEmail) {
+      console.log("🔍 Attorney found in Attorney model, looking for corresponding Code record...");
+      const codeAttorney = await Code.findOne({ email: attorney.attorneyEmail });
+      
+      if (codeAttorney) {
+        console.log("✅ Corresponding Code record found:", codeAttorney.name);
+        codeAttorneyId = codeAttorney._id;
+      } else {
+        console.log("⚠️ No corresponding Code record found for email:", attorney.attorneyEmail);
+      }
+    }
+    
+    // If not found in Attorney model, check Code model directly
     if (!attorney) {
       console.log("🔍 Attorney not found in Attorney model, checking Code model...");
-      const Code = require("../models/Code");
       const codeAttorney = await Code.findById(req.userId);
       
       if (codeAttorney) {
@@ -545,6 +559,7 @@ router.get("/appointments", auth, async (req, res) => {
           specialization: codeAttorney.qualification
         };
         attorneyId = codeAttorney._id;
+        codeAttorneyId = codeAttorney._id;
       }
     }
 
@@ -553,54 +568,45 @@ router.get("/appointments", auth, async (req, res) => {
       return res.status(404).json({ message: "Attorney profile not found" });
     }
 
-    console.log("✅ Attorney found:", attorney.name || 'Unknown', "ID:", attorney._id);
+    console.log("✅ Attorney found:", attorney.name || 'Unknown', "Attorney ID:", attorney._id, "Code ID:", codeAttorneyId);
 
-    // Get all appointments for this attorney - use multiple methods to find appointments
+    // Get all appointments for this attorney
     let appointments = [];
     
-    // Method 1: By attorney ID
-    const appointmentsById = await Appointment.find({
-      $or: [
-        { doctor_id: attorneyId },
-        { attorney_id: attorneyId }
-      ]
-    })
-      .populate('user_id', 'name email phone')
-      .sort({ date: 1, time: 1 })
-      .lean();
-
-    appointments = appointmentsById;
-    console.log("🔍 Appointments found by ID:", appointmentsById.length);
-
-    // Method 2: If no appointments found by ID, try by attorney name
-    if (appointments.length === 0 && attorney.name) {
-      console.log("🔍 No appointments by ID, searching by attorney name:", attorney.name);
-      const appointmentsByName = await Appointment.find({
-        attorneyName: { $regex: attorney.name, $options: 'i' }
-      })
+    // Build the search criteria - use both Attorney ID and Code ID
+    let searchCriteria = { isActive: true }; // Only get active appointments
+    let attorneyIds = [];
+    
+    if (attorneyId) {
+      attorneyIds.push(attorneyId);
+    }
+    if (codeAttorneyId) {
+      attorneyIds.push(codeAttorneyId);
+    }
+    
+    if (attorneyIds.length > 0) {
+      searchCriteria.$or = [
+        { doctor_id: { $in: attorneyIds } },
+        { attorney_id: { $in: attorneyIds } }
+      ];
+    }
+    
+    console.log("🔍 Search criteria:", JSON.stringify(searchCriteria, null, 2));
+    
+    // Method 1: By attorney IDs (primary method)
+    try {
+      const appointmentsById = await Appointment.find(searchCriteria)
         .populate('user_id', 'name email phone')
         .sort({ date: 1, time: 1 })
         .lean();
-      
-      appointments = appointmentsByName;
-      console.log("🔍 Appointments found by name:", appointmentsByName.length);
+
+      appointments = appointmentsById;
+      console.log("✅ Appointments found by ID:", appointmentsById.length);
+    } catch (error) {
+      console.error("❌ Error fetching appointments by ID:", error);
     }
 
-    // Method 3: Special case for "neel" - find all appointments with attorneyName "neel"
-    if (appointments.length === 0 && attorney.name && attorney.name.toLowerCase().includes('neel')) {
-      console.log("🔍 Special case: Finding all appointments for attorney 'neel'");
-      const neelAppointments = await Appointment.find({
-        attorneyName: 'neel'
-      })
-        .populate('user_id', 'name email phone')
-        .sort({ date: 1, time: 1 })
-        .lean();
-      
-      appointments = neelAppointments;
-      console.log("🔍 Neel appointments found:", neelAppointments.length);
-    }
-
-    console.log("🔍 Total appointments for attorney:", appointments.length);
+    console.log("✅ Total appointments for attorney:", appointments.length);
     
     // Debug: Show appointment details with attorney IDs
     if (appointments.length > 0) {
@@ -616,30 +622,35 @@ router.get("/appointments", auth, async (req, res) => {
     }
 
     // Format appointments for frontend
-    const formattedAppointments = appointments.map(appt => ({
-      id: appt._id,
-      patient: {
+    const formattedAppointments = appointments.map(appt => {
+      // Ensure patient object is properly populated
+      const patient = {
         name: appt.personalInfo?.name || appt.user_id?.name || "Unknown Client",
         email: appt.personalInfo?.email || appt.user_id?.email || "",
         phone: appt.personalInfo?.phone || appt.user_id?.phone || ""
-      },
-      client: appt.user_id?.name || "Unknown Client",
-      clientEmail: appt.user_id?.email || "",
-      clientPhone: appt.user_id?.phone || "",
-      date: new Date(appt.date).toISOString().split('T')[0],
-      time: appt.time,
-      status: appt.status,
-      subject: appt.subject,
-      purpose: appt.purpose,
-      caseSummary: appt.caseSummary,
-      documents: appt.documents || "",
-      desiredOutcome: appt.desiredOutcome,
-      attorneyName: appt.attorneyName,
-      attorneySpecialization: appt.attorneySpecialization,
-      attorneyFees: appt.attorneyFees,
-      personalInfo: appt.personalInfo,
-      createdAt: appt.createdAt
-    }));
+      };
+
+      return {
+        id: appt._id,
+        patient: patient,
+        client: patient.name,
+        clientEmail: patient.email,
+        clientPhone: patient.phone,
+        date: new Date(appt.date).toISOString().split('T')[0],
+        time: appt.time,
+        status: appt.status || "Pending",
+        subject: appt.subject || "",
+        purpose: appt.purpose || "",
+        caseSummary: appt.caseSummary || "",
+        documents: appt.documents || "",
+        desiredOutcome: appt.desiredOutcome || "",
+        attorneyName: appt.attorneyName || "",
+        attorneySpecialization: appt.attorneySpecialization || "",
+        attorneyFees: appt.attorneyFees || 0,
+        personalInfo: appt.personalInfo,
+        createdAt: appt.createdAt
+      };
+    });
 
     res.json({
       appointments: formattedAppointments,
@@ -669,9 +680,53 @@ router.get("/all", async (req, res) => {
     
     for (const codeAttorney of codeAttorneys) {
       // Check if this attorney exists in Attorney model (has signed up)
-      const attorneyRecord = await Attorney.findOne({ 
+      // Try exact match first
+      let attorneyRecord = await Attorney.findOne({ 
         attorneyEmail: codeAttorney.email 
       }).lean();
+      
+      // If no exact match, try fuzzy matching for common typos
+      if (!attorneyRecord) {
+        // Extract username part before @ and try common domain variations
+        const emailParts = codeAttorney.email.split('@');
+        if (emailParts.length === 2) {
+          const username = emailParts[0];
+          const domain = emailParts[1];
+          
+          // Common domain variations to try
+          const domainVariations = [
+            domain,
+            'gmail.com',
+            'yahoo.com',
+            'outlook.com',
+            'hotmail.com'
+          ];
+          
+          // Try each domain variation
+          for (const domainVariation of domainVariations) {
+            const variedEmail = `${username}@${domainVariation}`;
+            attorneyRecord = await Attorney.findOne({ 
+              attorneyEmail: variedEmail 
+            }).lean();
+            
+            if (attorneyRecord) {
+              console.log(`🔍 Found attorney with email variation: ${codeAttorney.email} -> ${variedEmail}`);
+              break;
+            }
+          }
+          
+          // Also try matching by name if email variations don't work
+          if (!attorneyRecord && codeAttorney.name) {
+            attorneyRecord = await Attorney.findOne({ 
+              name: { $regex: codeAttorney.name, $options: 'i' }
+            }).lean();
+            
+            if (attorneyRecord) {
+              console.log(`🔍 Found attorney by name matching: ${codeAttorney.name} -> ${attorneyRecord.attorneyEmail}`);
+            }
+          }
+        }
+      }
       
       if (attorneyRecord) {
         // Attorney has signed up, include them in public listing
@@ -1071,6 +1126,46 @@ router.get("/consultation/:consultationId/messages", auth, async (req, res) => {
     });
   } catch (error) {
     console.error("Get consultation messages error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ===== DELETE APPOINTMENT =====
+router.delete("/appointments/:appointmentId", auth, async (req, res) => {
+  try {
+    if (req.userRole !== "Attorney") {
+      return res.status(403).json({ message: "Only attorneys can delete appointments" });
+    }
+
+    const { appointmentId } = req.params;
+
+    const appointment = await Appointment.findById(appointmentId);
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    // Verify that this appointment belongs to the attorney
+    if (appointment.doctor_id.toString() !== req.user.id && appointment.attorney_id.toString() !== req.user.id) {
+      return res.status(403).json({ message: "You can only delete your own appointments" });
+    }
+
+    // Soft delete
+    appointment.isActive = false;
+    appointment.deletedAt = new Date();
+    appointment.deletionReason = "Attorney deletion";
+    await appointment.save();
+
+    console.log(`✅ Attorney deleted appointment: ${appointmentId}`);
+
+    res.json({
+      message: "Appointment deleted successfully",
+      appointment: {
+        id: appointment._id,
+        status: "deleted"
+      }
+    });
+  } catch (error) {
+    console.error("Attorney delete appointment error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });

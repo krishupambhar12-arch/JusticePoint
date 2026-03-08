@@ -5,8 +5,6 @@ const Attorney = require("../models/Attorney");
 const Appointment = require("../models/Appointment");
 const Admin = require("../models/Admin");
 const Feedback = require("../models/Feedback");
-const LabTest = require("../models/LabTest");
-const LabTestBooking = require("../models/LabTestBooking");
 const Consultation = require("../models/Consultation");
 const ConsultationMessage = require("../models/ConsultationMessage");
 const Service = require("../models/Service");
@@ -148,6 +146,179 @@ router.get("/dashboard", auth, async (req, res) => {
     });
   } catch (error) {
     console.error("Dashboard error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ===== GET ALL APPOINTMENTS =====
+router.get("/appointments", auth, async (req, res) => {
+  try {
+    if (req.userRole !== "Admin") {
+      return res.status(403).json({ message: "Only admins can access appointments" });
+    }
+
+    console.log("🔍 Admin fetching all appointments with complete details");
+
+    // Get all appointments with full user and attorney details
+    const appointments = await Appointment.find({ isActive: true })
+      .populate('user_id', 'name email phone role profilePicture createdAt updatedAt')
+      .populate('doctor_id', 'attorneyName attorneyEmail attorneyPhone specialization fees qualification experience barNumber officeAddress createdAt updatedAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    console.log(`✅ Found ${appointments.length} appointments`);
+
+    // Format appointments with complete details
+    const formattedAppointments = appointments.map(apt => {
+      // Complete user information
+      const userInfo = {
+        id: apt.user_id?._id || apt.user_id,
+        name: apt.user_id?.name || apt.personalInfo?.name || "Unknown User",
+        email: apt.user_id?.email || apt.personalInfo?.email || "",
+        phone: apt.user_id?.phone || apt.personalInfo?.phone || "",
+        role: apt.user_id?.role || "Client",
+        profilePicture: apt.user_id?.profilePicture || "",
+        createdAt: apt.user_id?.createdAt,
+        updatedAt: apt.user_id?.updatedAt,
+        signupDate: apt.user_id?.createdAt ? new Date(apt.user_id.createdAt).toLocaleDateString() : 'N/A',
+        signupTime: apt.user_id?.createdAt ? new Date(apt.user_id.createdAt).toLocaleTimeString() : 'N/A'
+      };
+
+      // Complete attorney information
+      const attorneyInfo = {
+        id: apt.doctor_id?._id || apt.doctor_id,
+        name: apt.doctor_id?.attorneyName || apt.attorneyName || "Unknown Attorney",
+        email: apt.doctor_id?.attorneyEmail || "",
+        phone: apt.doctor_id?.attorneyPhone || "",
+        specialization: apt.doctor_id?.specialization || apt.attorneySpecialization || "General Practice",
+        fees: apt.doctor_id?.fees || apt.attorneyFees || 0,
+        qualification: apt.doctor_id?.qualification || "",
+        experience: apt.doctor_id?.experience || "",
+        barNumber: apt.doctor_id?.barNumber || "",
+        officeAddress: apt.doctor_id?.officeAddress || "",
+        createdAt: apt.doctor_id?.createdAt,
+        updatedAt: apt.doctor_id?.updatedAt
+      };
+
+      return {
+        id: apt._id,
+        date: new Date(apt.date).toISOString().split('T')[0],
+        time: apt.time,
+        status: apt.status || "Pending",
+        
+        // Appointment details from user booking
+        subject: apt.subject || "",
+        purpose: apt.purpose || "",
+        caseSummary: apt.caseSummary || "",
+        documents: apt.documents || "",
+        desiredOutcome: apt.desiredOutcome || "",
+        symptoms: apt.symptoms || "",
+        notes: apt.notes || "",
+        
+        // Complete user information
+        user: userInfo,
+        patient: userInfo, // Keep for backward compatibility
+        
+        // Complete attorney information  
+        attorney: attorneyInfo,
+        doctor: attorneyInfo, // Keep for backward compatibility
+        
+        // Additional details
+        attorneyName: attorneyInfo.name,
+        attorneySpecialization: attorneyInfo.specialization,
+        attorneyFees: attorneyInfo.fees,
+        
+        // Timestamps
+        createdAt: apt.createdAt,
+        updatedAt: apt.updatedAt,
+        createdDate: apt.createdAt ? new Date(apt.createdAt).toLocaleDateString() : 'N/A',
+        createdTime: apt.createdAt ? new Date(apt.createdAt).toLocaleTimeString() : 'N/A',
+        lastUpdatedDate: apt.updatedAt ? new Date(apt.updatedAt).toLocaleDateString() : 'N/A',
+        lastUpdatedTime: apt.updatedAt ? new Date(apt.updatedAt).toLocaleTimeString() : 'N/A'
+      };
+    });
+
+    res.json({
+      appointments: formattedAppointments,
+      total: formattedAppointments.length
+    });
+  } catch (error) {
+    console.error("Admin appointments error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ===== UPDATE APPOINTMENT STATUS =====
+router.put("/appointments/:appointmentId/status", auth, async (req, res) => {
+  try {
+    if (req.userRole !== "Admin") {
+      return res.status(403).json({ message: "Only admins can update appointment status" });
+    }
+
+    const { appointmentId } = req.params;
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ message: "Status is required" });
+    }
+
+    const appointment = await Appointment.findById(appointmentId);
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    // Update status
+    appointment.status = status;
+    appointment.updatedAt = new Date();
+    await appointment.save();
+
+    console.log(`✅ Admin updated appointment ${appointmentId} status to: ${status}`);
+
+    res.json({
+      message: "Appointment status updated successfully",
+      appointment: {
+        id: appointment._id,
+        status: appointment.status,
+        updatedAt: appointment.updatedAt
+      }
+    });
+  } catch (error) {
+    console.error("Admin update appointment status error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ===== DELETE APPOINTMENT =====
+router.delete("/appointments/:appointmentId", auth, async (req, res) => {
+  try {
+    if (req.userRole !== "Admin") {
+      return res.status(403).json({ message: "Only admins can delete appointments" });
+    }
+
+    const { appointmentId } = req.params;
+
+    const appointment = await Appointment.findById(appointmentId);
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    // Soft delete
+    appointment.isActive = false;
+    appointment.deletedAt = new Date();
+    appointment.deletionReason = "Admin deletion";
+    await appointment.save();
+
+    console.log(`✅ Admin soft deleted appointment: ${appointmentId}`);
+
+    res.json({
+      message: "Appointment deleted successfully",
+      appointment: {
+        id: appointment._id,
+        status: "deleted"
+      }
+    });
+  } catch (error) {
+    console.error("Admin delete appointment error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -787,6 +958,339 @@ router.put("/services/:id/restore", auth, async (req, res) => {
     });
   } catch (error) {
     console.error("Restore service error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ===== GET All Feedback (Admin) =====
+router.get("/feedback", auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.userRole !== "Admin") {
+      return res.status(403).json({ message: "Only admins can access this endpoint" });
+    }
+
+    const { status } = req.query;
+
+    // Build query
+    const query = {};
+    if (status) {
+      query.status = status;
+    }
+
+    const feedbacks = await Feedback.find(query)
+      .populate('user_id', 'name email phone')
+      .populate('responded_by', 'name email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const formattedFeedbacks = feedbacks.map(feedback => ({
+      id: feedback._id,
+      subject: feedback.subject,
+      message: feedback.message,
+      rating: feedback.rating,
+      status: feedback.status,
+      admin_response: feedback.admin_response || "",
+      responded_at: feedback.responded_at || null,
+      user: {
+        id: feedback.user_id?._id,
+        name: feedback.user_id?.name || "Unknown",
+        email: feedback.user_id?.email || "Unknown",
+        phone: feedback.user_id?.phone || "Unknown"
+      },
+      responded_by: feedback.responded_by ? {
+        id: feedback.responded_by._id,
+        name: feedback.responded_by.name,
+        email: feedback.responded_by.email
+      } : null,
+      createdAt: feedback.createdAt,
+      updatedAt: feedback.updatedAt
+    }));
+
+    res.json({
+      feedbacks: formattedFeedbacks,
+      total: formattedFeedbacks.length
+    });
+  } catch (error) {
+    console.error("Admin get feedback error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ===== UPDATE Feedback Status (Admin) =====
+router.put("/feedback/:id/status", auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.userRole !== "Admin") {
+      return res.status(403).json({ message: "Only admins can access this endpoint" });
+    }
+
+    const { status } = req.body;
+    const { id } = req.params;
+
+    // Validate status
+    const validStatuses = ["Pending", "Reviewed", "Resolved", "Archived"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ 
+        message: "Invalid status. Valid statuses are: Pending, Reviewed, Resolved, Archived" 
+      });
+    }
+
+    const feedback = await Feedback.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true, runValidators: true }
+    )
+      .populate('user_id', 'name email')
+      .lean();
+
+    if (!feedback) {
+      return res.status(404).json({ message: "Feedback not found" });
+    }
+
+    res.json({
+      message: "Feedback status updated successfully",
+      feedback: {
+        id: feedback._id,
+        subject: feedback.subject,
+        status: feedback.status,
+        user: {
+          name: feedback.user_id?.name,
+          email: feedback.user_id?.email
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Admin update feedback status error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ===== RESPOND to Feedback (Admin) =====
+router.put("/feedback/:id/respond", auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.userRole !== "Admin") {
+      return res.status(403).json({ message: "Only admins can access this endpoint" });
+    }
+
+    const { admin_response, status } = req.body;
+    const { id } = req.params;
+
+    if (!admin_response) {
+      return res.status(400).json({ message: "Admin response is required" });
+    }
+
+    // Update feedback with response
+    const updateData = {
+      admin_response,
+      responded_by: req.userId,
+      responded_at: new Date()
+    };
+
+    // Update status if provided
+    if (status) {
+      const validStatuses = ["Pending", "Reviewed", "Resolved", "Archived"];
+      if (validStatuses.includes(status)) {
+        updateData.status = status;
+      }
+    } else {
+      // Default to Reviewed if status not provided
+      updateData.status = "Reviewed";
+    }
+
+    const feedback = await Feedback.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    )
+      .populate('user_id', 'name email')
+      .populate('responded_by', 'name email')
+      .lean();
+
+    if (!feedback) {
+      return res.status(404).json({ message: "Feedback not found" });
+    }
+
+    res.json({
+      message: "Response added successfully",
+      feedback: {
+        id: feedback._id,
+        subject: feedback.subject,
+        message: feedback.message,
+        admin_response: feedback.admin_response,
+        status: feedback.status,
+        responded_at: feedback.responded_at,
+        user: {
+          name: feedback.user_id?.name,
+          email: feedback.user_id?.email
+        },
+        responded_by: feedback.responded_by ? {
+          name: feedback.responded_by.name,
+          email: feedback.responded_by.email
+        } : null
+      }
+    });
+  } catch (error) {
+    console.error("Admin respond to feedback error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ===== DELETE Feedback (Admin) =====
+router.delete("/feedback/:id", auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.userRole !== "Admin") {
+      return res.status(403).json({ message: "Only admins can access this endpoint" });
+    }
+
+    const { id } = req.params;
+
+    const feedback = await Feedback.findByIdAndDelete(id);
+    if (!feedback) {
+      return res.status(404).json({ message: "Feedback not found" });
+    }
+
+    res.json({ message: "Feedback deleted successfully" });
+  } catch (error) {
+    console.error("Admin delete feedback error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ===== GET All Consultations (Admin) =====
+router.get("/consultations", auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.userRole !== "Admin") {
+      return res.status(403).json({ message: "Only admins can access this endpoint" });
+    }
+
+    const consultations = await Consultation.find({})
+      .populate('patient_id', 'name email phone')
+      .populate({
+        path: 'doctor_id',
+        populate: {
+          path: 'userId',
+          select: 'name email specialization'
+        }
+      })
+      .sort({ updatedAt: -1 })
+      .lean();
+
+    const formattedConsultations = consultations.map(consultation => ({
+      id: consultation._id,
+      client: {
+        id: consultation.patient_id?._id,
+        name: consultation.patient_id?.name || "Unknown",
+        email: consultation.patient_id?.email || "",
+        phone: consultation.patient_id?.phone || ""
+      },
+      attorney: {
+        id: consultation.doctor_id?._id,
+        name: consultation.doctor_id?.userId?.name || "Unknown",
+        email: consultation.doctor_id?.userId?.email || "",
+        specialization: consultation.doctor_id?.specialization || ""
+      },
+      status: consultation.status,
+      subject: consultation.subject || "",
+      createdAt: consultation.createdAt,
+      updatedAt: consultation.updatedAt
+    }));
+
+    res.json({
+      consultations: formattedConsultations,
+      total: formattedConsultations.length
+    });
+  } catch (error) {
+    console.error("Admin get consultations error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ===== GET Messages for Consultation (Admin) =====
+router.get("/consultations/:consultationId/messages", auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.userRole !== "Admin") {
+      return res.status(403).json({ message: "Only admins can access this endpoint" });
+    }
+
+    const { consultationId } = req.params;
+
+    // Get all messages for this consultation
+    const messages = await ConsultationMessage.find({ consultation_id: consultationId })
+      .populate('sender_id', 'name email')
+      .sort({ createdAt: 1 })
+      .lean();
+
+    const formattedMessages = messages.map(msg => ({
+      id: msg._id,
+      consultation_id: msg.consultation_id,
+      sender_id: msg.sender_id?._id,
+      sender_name: msg.sender_id?.name || "Unknown",
+      sender_email: msg.sender_id?.email || "Unknown",
+      sender_role: msg.sender_role,
+      message: msg.message,
+      createdAt: msg.createdAt
+    }));
+
+    res.json({
+      messages: formattedMessages,
+      total: formattedMessages.length
+    });
+  } catch (error) {
+    console.error("Admin get consultation messages error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ===== SEND Reply Message in Consultation (Admin) =====
+router.post("/consultations/:consultationId/reply", auth, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.userRole !== "Admin") {
+      return res.status(403).json({ message: "Only admins can reply to consultations" });
+    }
+
+    const { consultationId } = req.params;
+    const { message } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({ message: "Message is required" });
+    }
+
+    // Check if consultation exists
+    const consultation = await Consultation.findById(consultationId);
+    if (!consultation) {
+      return res.status(404).json({ message: "Consultation not found" });
+    }
+
+    // Create message as Admin (sent as Attorney for consistency)
+    const consultationMessage = new ConsultationMessage({
+      consultation_id: consultationId,
+      sender_id: req.userId, // Admin's user ID
+      sender_role: 'Attorney',
+      message: `[Admin Reply] ${message.trim()}`
+    });
+
+    await consultationMessage.save();
+
+    // Update consultation updatedAt
+    await Consultation.findByIdAndUpdate(consultationId, { updatedAt: new Date() });
+
+    res.status(201).json({
+      message: "Reply sent successfully",
+      messageData: {
+        id: consultationMessage._id,
+        message: consultationMessage.message,
+        sender_role: consultationMessage.sender_role,
+        createdAt: consultationMessage.createdAt
+      }
+    });
+  } catch (error) {
+    console.error("Admin reply to consultation error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });

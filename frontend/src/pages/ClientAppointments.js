@@ -39,6 +39,14 @@ const ClientAppointments = () => {
       if (!res.ok) throw new Error(data.message || "Failed to load appointments");
 
       console.log("🔍 Setting appointments:", data.appointments);
+      console.log("🔍 Sample appointment attorney details:", data.appointments.map(apt => ({
+        id: apt.id,
+        attorneyName: apt.doctor?.name || apt.attorneyName,
+        doctor_id: apt.doctor_id,
+        attorney_id: apt.attorney_id,
+        subject: apt.subject,
+        date: apt.date
+      })));
       setAppointments(data.appointments || []);
     } catch (e) {
       console.error("❌ Error fetching appointments:", e);
@@ -51,8 +59,10 @@ const ClientAppointments = () => {
   useEffect(() => {
     fetchAppointments();
     
-    // Auto-refresh every 30 seconds to get latest appointments
-    const interval = setInterval(fetchAppointments, 30000);
+    // Auto-refresh every 30 seconds to get latest appointments and status updates
+    const interval = setInterval(() => {
+      fetchAppointments();
+    }, 30000);
     
     return () => clearInterval(interval);
   }, []);

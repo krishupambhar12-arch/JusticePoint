@@ -83,8 +83,8 @@ const Home = () => {
       navigate("/attorneys");
     } else if (service === "consultation") {
       navigate("/client/consultation");
-    } else if (service === "labtest") {
-      navigate("/lab-tests");
+    // } else if (service === "labtest") {
+    //   navigate("/lab-tests");
     }
   };
 
@@ -129,7 +129,7 @@ const Home = () => {
 
         <div className="card ai-card" onClick={() => navigate("/ai-advisor")}>
           <div className="ai-icon">🤖</div>
-          <p>AI Health Advisor</p>
+          <p>AI Legal Advisor</p>
           <button className="book-btn">Chat Now</button>
         </div>
       </div>

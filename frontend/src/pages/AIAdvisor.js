@@ -102,7 +102,7 @@ const AIAdvisor = () => {
           <div className="ai-header">
             <div className="ai-title">
               <span className="ai-icon-large">🤖</span>
-              <h1>AI Health Advisor</h1>
+              <h1>AI Legal Advisor</h1>
             </div>
             <p className="ai-subtitle">Ask me about your health concerns for quick advice</p>
             {chatHistory.length > 0 && (
@@ -116,7 +116,7 @@ const AIAdvisor = () => {
             {chatHistory.length === 0 ? (
               <div className="welcome-message">
                 <div className="welcome-icon">👋</div>
-                <h2>Welcome to AI Health Advisor</h2>
+                <h2>Welcome to AI Legal Advisor</h2>
                 <p>I can help you with:</p>
                 <ul>
                   <li>General health advice</li>

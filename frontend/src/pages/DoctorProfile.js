@@ -426,7 +426,7 @@ const AttorneyProfile = () => {
                 min="0"
               />
             ) : (
-              <span>${attorney.fees || "0"}</span>
+              <span>₹{attorney.fees || "0"}</span>
             )}
           </div>
         </div>

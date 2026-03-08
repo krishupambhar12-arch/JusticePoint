@@ -31,6 +31,8 @@ const AdminAppointments = () => {
   const [patientSearch, setPatientSearch] = useState('');
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
   const [selectedPatientName, setSelectedPatientName] = useState('');
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
 
   const token = localStorage.getItem('token');
 
@@ -38,6 +40,13 @@ const AdminAppointments = () => {
     fetchAppointments();
     fetchUsers();
     fetchDoctors();
+    
+    // Auto-refresh every 30 seconds to get latest appointments and status updates
+    const interval = setInterval(() => {
+      fetchAppointments();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   // Close dropdown when clicking outside
@@ -180,6 +189,11 @@ const AdminAppointments = () => {
     }
   };
 
+  const handleViewAppointment = (appointment) => {
+    setSelectedAppointment(appointment);
+    setShowViewModal(true);
+  };
+
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
@@ -315,8 +329,9 @@ const AdminAppointments = () => {
                 <tr>
                   <th>Date</th>
                   <th>Time</th>
-                  <th>Client</th>
-                  <th>Attorney</th>
+                  <th>Subject</th>
+                  <th>Client Name</th>
+                  <th>Attorney Name</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -327,61 +342,75 @@ const AdminAppointments = () => {
                     <td>{appointment.date}</td>
                     <td>{appointment.time}</td>
                     <td>
-                      <div>
-                        <strong>{appointment.patient.name}</strong>
-                        <br />
-                        <small>{appointment.patient.email}</small>
-                        <br />
-                        <small>{appointment.patient.phone}</small>
+                      <div style={{ maxWidth: '120px' }}>
+                        <small>{appointment.subject || 'N/A'}</small>
                       </div>
                     </td>
                     <td>
-                      <div>
-                        <strong>{appointment.doctor?.name || 'Unknown Attorney'}</strong>
-                        <br />
-                        <small>{appointment.doctor?.specialization || 'No specialization'}</small>
-                        {appointment.doctor?.email && (
-                          <>
-                            <br />
-                            <small>{appointment.doctor.email}</small>
-                          </>
-                        )}
-                        {appointment.doctor?.phone && (
-                          <>
-                            <br />
-                            <small>{appointment.doctor.phone}</small>
-                          </>
-                        )}
+                      <strong>{appointment.user?.name || appointment.patient?.name || 'Unknown Client'}</strong>
+                    </td>
+                    <td>
+                      <strong>{appointment.attorney?.name || appointment.doctor?.name || appointment.attorneyName || 'Unknown Attorney'}</strong>
+                    </td>
+                    <td>
+                      <span 
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          textTransform: 'uppercase',
+                          backgroundColor: getStatusColor(appointment.status),
+                          color: appointment.status === 'Pending' ? '#000' : '#fff'
+                        }}
+                      >
+                        {appointment.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '5px', flexDirection: 'column' }}>
+                        <button 
+                          onClick={() => handleViewAppointment(appointment)}
+                          style={{ 
+                            fontSize: '11px', 
+                            padding: '4px 8px',
+                            backgroundColor: '#28a745',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          View
+                        </button>
+                        <select 
+                          value={appointment.status}
+                          onChange={(e) => updateAppointmentStatus(appointment.id, e.target.value)}
+                          className="status-select"
+                          disabled={actionLoading.updating === appointment.id}
+                          style={{ fontSize: '12px', padding: '4px' }}
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="Confirmed">Confirmed</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Cancelled">Cancelled</option>
+                          <option value="Rejected">Rejected</option>
+                          <option value="Expired">Expired</option>
+                        </select>
+                        <button 
+                          onClick={() => deleteAppointment(appointment.id)}
+                          className="delete-btn"
+                          disabled={actionLoading.deleting === appointment.id}
+                          style={{ fontSize: '11px', padding: '4px 8px' }}
+                        >
+                          {actionLoading.deleting === appointment.id ? '...' : 'Delete'}
+                        </button>
                       </div>
-                    </td>
-                    <td>
-                      <select 
-                        value={appointment.status}
-                        onChange={(e) => updateAppointmentStatus(appointment.id, e.target.value)}
-                        className="status-select"
-                        disabled={actionLoading.updating === appointment.id}
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Confirmed">Confirmed</option>
-                        <option value="Completed">Completed</option>
-                        <option value="Cancelled">Cancelled</option>
-                        <option value="Rejected">Rejected</option>
-                        <option value="Expired">Expired</option>
-                      </select>
-                    </td>
-                    <td>
-                      <button 
-                        onClick={() => deleteAppointment(appointment.id)}
-                        className="delete-btn"
-                        disabled={actionLoading.deleting === appointment.id}
-                      >
-                        {actionLoading.deleting === appointment.id ? 'Please wait...' : 'Delete'}
-                      </button>
                     </td>
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan="6" className="no-appointments">No appointments found</td>
+                    <td colSpan="7" className="no-appointments">No appointments found</td>
                   </tr>
                 )}
               </tbody>
@@ -587,6 +616,130 @@ const AdminAppointments = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* View Appointment Modal */}
+        {showViewModal && selectedAppointment && (
+          <div className="modal-overlay" onClick={() => setShowViewModal(false)}>
+            <div className="modal-content" style={{ maxWidth: '800px', maxHeight: '90vh', overflow: 'auto' }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Appointment Details</h3>
+                <button 
+                  className="modal-close-btn"
+                  onClick={() => setShowViewModal(false)}
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="modal-body" style={{ padding: '20px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  
+                  {/* Left Column - Basic Info */}
+                  <div>
+                    <h4 style={{ marginBottom: '15px', color: '#333' }}>📅 Basic Information</h4>
+                    <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '8px' }}>
+                      <p><strong>Date:</strong> {selectedAppointment.date}</p>
+                      <p><strong>Time:</strong> {selectedAppointment.time}</p>
+                      <p><strong>Status:</strong> 
+                        <span style={{
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          textTransform: 'uppercase',
+                          backgroundColor: getStatusColor(selectedAppointment.status),
+                          color: selectedAppointment.status === 'Pending' ? '#000' : '#fff',
+                          marginLeft: '10px'
+                        }}>
+                          {selectedAppointment.status}
+                        </span>
+                      </p>
+                      <p><strong>Created:</strong> {selectedAppointment.createdDate} at {selectedAppointment.createdTime}</p>
+                      <p><strong>Last Updated:</strong> {selectedAppointment.lastUpdatedDate} at {selectedAppointment.lastUpdatedTime}</p>
+                    </div>
+                  </div>
+
+                  {/* Right Column - Case Details */}
+                  <div>
+                    <h4 style={{ marginBottom: '15px', color: '#333' }}>📝 Case Details</h4>
+                    <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '8px' }}>
+                      <p><strong>Subject:</strong> {selectedAppointment.subject || 'N/A'}</p>
+                      <p><strong>Purpose:</strong> {selectedAppointment.purpose || 'N/A'}</p>
+                      <p><strong>Case Summary:</strong></p>
+                      <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
+                        {selectedAppointment.caseSummary || 'No case summary provided'}
+                      </p>
+                      <p><strong>Documents:</strong> {selectedAppointment.documents || 'N/A'}</p>
+                      <p><strong>Desired Outcome:</strong> {selectedAppointment.desiredOutcome || 'N/A'}</p>
+                    </div>
+                  </div>
+
+                  {/* Client Details */}
+                  <div>
+                    <h4 style={{ marginBottom: '15px', color: '#333' }}>👤 Client Information</h4>
+                    <div style={{ backgroundColor: '#e3f2fd', padding: '15px', borderRadius: '8px' }}>
+                      <p><strong>Name:</strong> {selectedAppointment.user?.name || selectedAppointment.patient?.name || 'N/A'}</p>
+                      <p><strong>Email:</strong> {selectedAppointment.user?.email || selectedAppointment.patient?.email || 'N/A'}</p>
+                      <p><strong>Phone:</strong> {selectedAppointment.user?.phone || selectedAppointment.patient?.phone || 'N/A'}</p>
+                      <p><strong>Role:</strong> {selectedAppointment.user?.role || 'Client'}</p>
+                      <p><strong>Member Since:</strong> {selectedAppointment.user?.signupDate || 'N/A'}</p>
+                      {selectedAppointment.user?.profilePicture && (
+                        <div style={{ marginTop: '10px' }}>
+                          <img 
+                            src={selectedAppointment.user.profilePicture} 
+                            alt="Client Profile" 
+                            style={{ width: '60px', height: '60px', borderRadius: '50%', border: '2px solid #ddd' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Attorney Details */}
+                  <div>
+                    <h4 style={{ marginBottom: '15px', color: '#333' }}>👨‍⚖️ Attorney Information</h4>
+                    <div style={{ backgroundColor: '#fff3e0', padding: '15px', borderRadius: '8px' }}>
+                      <p><strong>Name:</strong> {selectedAppointment.attorney?.name || selectedAppointment.doctor?.name || selectedAppointment.attorneyName || 'N/A'}</p>
+                      <p><strong>Email:</strong> {selectedAppointment.attorney?.email || selectedAppointment.doctor?.email || 'N/A'}</p>
+                      <p><strong>Phone:</strong> {selectedAppointment.attorney?.phone || selectedAppointment.doctor?.phone || 'N/A'}</p>
+                      <p><strong>Specialization:</strong> {selectedAppointment.attorney?.specialization || selectedAppointment.doctor?.specialization || selectedAppointment.attorneySpecialization || 'N/A'}</p>
+                      <p><strong>Fees:</strong> ₹{selectedAppointment.attorney?.fees || selectedAppointment.doctor?.fees || selectedAppointment.attorneyFees || 0}</p>
+                      {selectedAppointment.attorney?.qualification && (
+                        <p><strong>Qualification:</strong> {selectedAppointment.attorney.qualification}</p>
+                      )}
+                      {selectedAppointment.attorney?.experience && (
+                        <p><strong>Experience:</strong> {selectedAppointment.attorney.experience} years</p>
+                      )}
+                      {selectedAppointment.attorney?.barNumber && (
+                        <p><strong>Bar Number:</strong> {selectedAppointment.attorney.barNumber}</p>
+                      )}
+                      {selectedAppointment.attorney?.officeAddress && (
+                        <p><strong>Office:</strong> {selectedAppointment.attorney.officeAddress}</p>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <div className="modal-footer" style={{ padding: '20px', borderTop: '1px solid #ddd', textAlign: 'right' }}>
+                <button 
+                  onClick={() => setShowViewModal(false)}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#6c757d',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}

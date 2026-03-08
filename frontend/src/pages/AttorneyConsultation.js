@@ -133,8 +133,8 @@ const AttorneyConsultation = () => {
                   onClick={() => setSelectedConsultation(consultation)}
                 >
                   <div className="consultation-info">
-                    <strong>{consultation.patient_name}</strong>
-                    <small>{consultation.patient_email}</small>
+                    <strong>{consultation.patient_name || consultation.client?.name || 'Unknown'}</strong>
+                    <small>{consultation.patient_email || consultation.client?.email || 'No email'}</small>
                     <span className={`status ${consultation.status.toLowerCase()}`}>
                       {consultation.status}
                     </span>
@@ -150,8 +150,8 @@ const AttorneyConsultation = () => {
             <>
               <div className="chat-header">
                 <div>
-                  <h3>{selectedConsultation.patient_name}</h3>
-                  <small>{selectedConsultation.patient_email}</small>
+                  <h3>{selectedConsultation.patient_name || selectedConsultation.client?.name || 'Unknown'}</h3>
+                  <small>{selectedConsultation.patient_email || selectedConsultation.client?.email || 'No email'}</small>
                 </div>
                 <span className={`status ${selectedConsultation.status.toLowerCase()}`}>
                   {selectedConsultation.status}

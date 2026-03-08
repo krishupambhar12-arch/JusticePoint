@@ -50,14 +50,14 @@ const ClientSidebar = () => {
               Appointments
             </NavLink>
           </li>
-          <li>
+          {/* <li>
             <NavLink 
               to="/client/lab-tests" 
               className={({ isActive }) => isActive ? "active" : ""}
             >
               Lab Tests
             </NavLink>
-          </li>
+          </li> */}
           <li>
             <NavLink 
               to="/client/consultation" 
