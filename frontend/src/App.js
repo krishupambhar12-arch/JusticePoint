@@ -12,7 +12,7 @@ import ProtectedAdminRoute from './components/ProtectedAdminRoute';
 import Register from "./pages/Register";
 import AttorneyDetailsForm from "./pages/AttorneyDetailsForm";
 import AttorneyDashboard from "./pages/AttorneyDashboard";
-import AttorneyProfile from "./pages/DoctorProfile";
+import AttorneyProfile from "./pages/AttorneyProfile";
 import AttorneyAppointments from "./pages/AttorneyAppointments";
 import ClientDashboard from "./pages/ClientDashboard";
 import ClientProfile from "./pages/ClientProfile";
@@ -38,7 +38,11 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Services from "./pages/Services";
 import GoogleCallback from "./pages/GoogleCallback";
 import ProfileRedirect from "./pages/ProfileRedirect";
-import AuthCallback from "./pages/AuthCallback";
+import TermsAndConditions from "./pages/TermsAndConditions";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import OurRights from "./pages/OurRights";
+import CookiePolicy from "./pages/CookiePolicy";
+import Disclaimer from "./pages/Disclaimer";
 
 function App() {
   return (
@@ -55,7 +59,6 @@ function App() {
         <Route path="/attorney-forgot-password" element={<AttorneyForgotPassword />} />
         <Route path="/attorney" element={<Navigate to="/attorney-login" replace />} />
         <Route path="/user" element={<GoogleCallback />} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/profile" element={<ProfileRedirect />} />
         <Route path="/attorney/details" element={<AttorneyDetailsForm />} />
         <Route path="/attorney/dashboard" element={<AttorneyDashboard />} />
@@ -65,8 +68,8 @@ function App() {
         <Route path="/client/dashboard" element={<ClientDashboard />} />
         <Route path="/client/profile" element={<ClientProfile />} />
         <Route path="/client/appointments" element={<ClientAppointments/>} />
-        <Route path="/client/consultation" element={<ClientConsultation/>} />
         <Route path="/client/feedback" element={<ClientFeedback/>} />
+        <Route path="/client/consultation" element={<ClientConsultation/>} />
         <Route path="/services" element={<Services/>} />
         <Route path="/about" element={<About/>} />
         <Route path="/contact" element={<Contact/>} />
@@ -110,6 +113,11 @@ function App() {
           </ProtectedAdminRoute>
         } />
         <Route path="/ai-advisor" element={<AIAdvisor/>} />
+        <Route path="/terms" element={<TermsAndConditions/>} />
+        <Route path="/privacy" element={<PrivacyPolicy/>} />
+        <Route path="/our-rights" element={<OurRights/>} />
+        <Route path="/cookies" element={<CookiePolicy/>} />
+        <Route path="/disclaimer" element={<Disclaimer/>} />
 
       </Routes>
     </Router>

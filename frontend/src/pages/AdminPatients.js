@@ -166,12 +166,12 @@ const AdminPatients = () => {
         <div className="admin-users">
           <div className="users-header">
             <h2>All Clients</h2>
-            <button 
+            {/* <button 
               onClick={() => setShowAddUserModal(true)}
               className="btn btn-primary"
             >
-              + Add Client
-            </button>
+               Add Client
+            </button> */}
           </div>
 
           {/* Add Client Modal */}

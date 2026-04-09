@@ -15,10 +15,10 @@
 .login-content-wrapper {
   display: flex;
   width: 100%;
-  max-width: 1135px;
-  background: white;
+  max-width: 1200px;
+  /* background: white; */
   border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(92, 71, 80, 0.2);
+  /* box-shadow: 0 20px 40px rgba(92, 71, 80, 0.2); */
   overflow: hidden;
 }
 
@@ -58,7 +58,7 @@
 
 /* Left Side Box - Website Information */
 .login-left-box {
-  flex: 0 0 500px;
+  flex: 1;
   background: linear-gradient(135deg, #5c4750, #4a3a42);
   color: white;
   padding: 50px 40px;
@@ -67,6 +67,7 @@
   justify-content: space-between;
   position: relative;
   overflow: hidden;
+  border-radius: 15px 0 0 15px;
 }
 
 .login-left-box::before {
@@ -198,7 +199,7 @@
 .stat-number {
   font-size: 28px;
   font-weight: 700;
-  color: white;
+  color: rgb(10, 10, 10);
   margin-bottom: 5px;
 }
 
@@ -261,12 +262,13 @@
 
 /* Right Side - Login Form */
 .login-form {
-  flex: 0 0 450px;
+  flex: 1;
   background: white;
-  padding: 50px 40px;
+  padding: 86px 40px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  border-radius: 0 15px 15px 0;
 }
 
 /* .get h1 h4 {
@@ -277,25 +279,25 @@
     letter-spacing: -0.5px;
 } */
 
-.login-form .get{
-     padding: 5px 14px;
-    border-radius: 12px;
-    margin-bottom: -2px;
-    font-size: 47px;
-    font-weight: 500;
-    text-align: center;
-    font-style: initial;
+.login-form .get {
+  padding: 5px 14px;
+  border-radius: 12px;
+  margin-bottom: -2px;
+  font-size: 47px;
+  font-weight: 500;
+  text-align: center;
+  font-style: initial;
 }
 
-.login-form .ac{
-    padding: 5px 14px;
-    border-radius: 12px;
-    margin-bottom: -60px;
-    font-size: 15px;
-    font-weight: 500;
-    text-align: center;
-    font-style: initial;
-  }
+.login-form .ac {
+  padding: 5px 14px;
+  border-radius: 12px;
+  margin-bottom: -60px;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+  font-style: initial;
+}
 
 
 .login-form h2 {
@@ -548,20 +550,20 @@
   .login-container {
     padding: 10px;
   }
-  
+
   .login-form {
     padding: 40px 30px;
     margin: 10px;
   }
-  
+
   .login-form h2 {
     font-size: 28px;
   }
-  
+
   .social-login-buttons {
     flex-direction: column;
   }
-  
+
   .social-btn {
     width: 100%;
   }
@@ -573,6 +575,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -584,7 +587,8 @@
 }
 
 .password-input {
-  padding-right: 45px !important; /* Space for eye icon */
+  padding-right: 45px !important;
+  /* Space for eye icon */
 }
 
 .password-toggle-btn {
@@ -613,7 +617,8 @@
 }
 
 .form-group input:focus {
-  border-color: var(--color-deep-purple); /* Highlight on focus */
+  border-color: var(--color-deep-purple);
+  /* Highlight on focus */
   outline: none;
 }
 

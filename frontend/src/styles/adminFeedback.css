@@ -3,7 +3,7 @@
 .dashboard-page {
   display: flex;
   min-height: 100vh;
-  background-color: var(--color-lightest);
+  background-color: var(--color-lightest);;
   font-family: var(--font-main);
 }
 

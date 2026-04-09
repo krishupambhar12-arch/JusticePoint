@@ -946,13 +946,69 @@ router.put("/appointments/:appointmentId/status", auth, async (req, res) => {
     }
 
     // Check if this appointment belongs to this attorney
-    const attorney = await Attorney.findById(req.userId);
+    // Use the same logic as the appointments fetching endpoint
+    let attorney = await Attorney.findById(req.userId).lean();
+    let attorneyId = req.userId;
+    let codeAttorneyId = null;
+    
+    // Always try to find the corresponding Code record based on email
+    const Code = require("../models/Code");
+    if (attorney && attorney.attorneyEmail) {
+      console.log("🔍 Attorney found in Attorney model, looking for corresponding Code record...");
+      const codeAttorney = await Code.findOne({ email: attorney.attorneyEmail });
+      
+      if (codeAttorney) {
+        console.log("✅ Corresponding Code record found:", codeAttorney.name);
+        codeAttorneyId = codeAttorney._id;
+      } else {
+        console.log("⚠️ No corresponding Code record found for email:", attorney.attorneyEmail);
+      }
+    }
+    
+    // If not found in Attorney model, check Code model directly
+    if (!attorney) {
+      console.log("🔍 Attorney not found in Attorney model, checking Code model...");
+      const codeAttorney = await Code.findById(req.userId);
+      
+      if (codeAttorney) {
+        console.log("✅ Attorney found in Code model:", codeAttorney.name);
+        attorney = codeAttorney;
+        attorneyId = codeAttorney._id;
+        codeAttorneyId = codeAttorney._id;
+      }
+    }
+
     if (!attorney) {
       return res.status(404).json({ message: "Attorney not found" });
     }
 
-    if (appointment.doctor_id.toString() !== attorney._id.toString()) {
+    // Build the same search criteria as used in appointments fetching
+    let attorneyIds = [];
+    
+    if (attorneyId) {
+      attorneyIds.push(attorneyId);
+    }
+    if (codeAttorneyId) {
+      attorneyIds.push(codeAttorneyId);
+    }
+    
+    // Check both doctor_id and attorney_id fields against all possible attorney IDs
+    const isDoctorAppointment = appointment.doctor_id && attorneyIds.some(id => 
+      appointment.doctor_id.toString() === id.toString()
+    );
+    const isAttorneyAppointment = appointment.attorney_id && attorneyIds.some(id => 
+      appointment.attorney_id.toString() === id.toString()
+    );
+    
+    console.log("🔍 Attorney IDs to check:", attorneyIds);
+    console.log("🔍 isDoctorAppointment:", isDoctorAppointment);
+    console.log("🔍 isAttorneyAppointment:", isAttorneyAppointment);
+    
+    if (!isDoctorAppointment && !isAttorneyAppointment) {
       console.log("❌ Unauthorized: Appointment does not belong to this attorney");
+      console.log("❌ Attorney IDs:", attorneyIds);
+      console.log("❌ Appointment doctor_id:", appointment.doctor_id);
+      console.log("❌ Appointment attorney_id:", appointment.attorney_id);
       return res.status(403).json({ message: "You can only update your own appointments" });
     }
 
@@ -983,16 +1039,24 @@ router.get("/consultations", auth, async (req, res) => {
       return res.status(403).json({ message: "Only attorneys can access this endpoint" });
     }
 
-    // Find attorney by userId
-    const attorney = await Attorney.findById(req.userId);
-    if (!attorney) {
-      return res.status(404).json({ message: "Attorney profile not found" });
-    }
-
-    const consultations = await Consultation.find({ doctor_id: attorney._id })
+    // Get attorney ID directly from req.userId (for attorneys, userId is their attorney ID)
+    const attorneyId = req.userId;
+    
+    console.log("🔍 Fetching consultations for attorney:", attorneyId);
+    
+    // First, let's see ALL consultations to debug
+    const allConsultations = await Consultation.find({}).lean();
+    console.log("🔍 Total consultations in DB:", allConsultations.length);
+    allConsultations.forEach(c => {
+      console.log(`  - Consultation ${c._id}: doctor_id=${c.doctor_id}, patient_id=${c.patient_id}, status=${c.status}`);
+    });
+    
+    const consultations = await Consultation.find({ doctor_id: attorneyId })
       .populate('patient_id', 'name email')
       .sort({ updatedAt: -1 })
       .lean();
+
+    console.log("🔍 Found consultations for this attorney:", consultations.length);
 
     const formattedConsultations = consultations.map(consultation => ({
       id: consultation._id,
@@ -1029,19 +1093,15 @@ router.post("/consultation/:consultationId/message", auth, async (req, res) => {
       return res.status(400).json({ message: "Message is required" });
     }
 
-    // Find attorney by userId
-    const attorney = await Attorney.findById(req.userId);
-    if (!attorney) {
-      return res.status(404).json({ message: "Attorney profile not found" });
-    }
+    // Get attorney ID directly from req.userId
+    const attorneyId = req.userId;
 
     // Check if consultation exists and belongs to this attorney
-    const consultation = await Consultation.findById(consultationId);
+    const consultation = await Consultation.findById(consultationId).populate('doctor_id', 'attorneyName');
     if (!consultation) {
       return res.status(404).json({ message: "Consultation not found" });
     }
-
-    if (consultation.doctor_id.toString() !== attorney._id.toString()) {
+    if (consultation.doctor_id._id.toString() !== attorneyId.toString()) {
       return res.status(403).json({ message: "Unauthorized access to this consultation" });
     }
 
@@ -1050,7 +1110,8 @@ router.post("/consultation/:consultationId/message", auth, async (req, res) => {
       consultation_id: consultationId,
       sender_id: req.userId,
       sender_role: 'Attorney',
-      message: message.trim()
+      message: message.trim(),
+      attorney_name: consultation.doctor_id.attorneyName || null
     });
 
     await consultationMessage.save();
@@ -1064,6 +1125,7 @@ router.post("/consultation/:consultationId/message", auth, async (req, res) => {
         id: consultationMessage._id,
         message: consultationMessage.message,
         sender_role: consultationMessage.sender_role,
+        attorney_name: consultationMessage.attorney_name,
         createdAt: consultationMessage.createdAt
       }
     });
@@ -1083,11 +1145,8 @@ router.get("/consultation/:consultationId/messages", auth, async (req, res) => {
 
     const { consultationId } = req.params;
 
-    // Find attorney by userId
-    const attorney = await Attorney.findById(req.userId);
-    if (!attorney) {
-      return res.status(404).json({ message: "Attorney profile not found" });
-    }
+    // Get attorney ID directly from req.userId
+    const attorneyId = req.userId;
 
     // Check if consultation exists and belongs to this attorney
     const consultation = await Consultation.findById(consultationId);
@@ -1095,7 +1154,7 @@ router.get("/consultation/:consultationId/messages", auth, async (req, res) => {
       return res.status(404).json({ message: "Consultation not found" });
     }
 
-    if (consultation.doctor_id.toString() !== attorney._id.toString()) {
+    if (consultation.doctor_id.toString() !== attorneyId.toString()) {
       return res.status(403).json({ message: "Unauthorized access to this consultation" });
     }
 

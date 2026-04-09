@@ -123,7 +123,7 @@ const PatientFeedback = () => {
           )}
 
           <div className="feedback-form-card">
-            <h3>Submit Feedback</h3>
+            <h3>Add Feedback</h3>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label htmlFor="subject">Subject *</label>
@@ -194,7 +194,7 @@ const PatientFeedback = () => {
             className="submit-feedback-btn" 
             onClick={() => setShowForm(!showForm)}
           >
-            {showForm ? "Cancel" : "+ Submit Feedback"}
+            {showForm ? "Cancel" : " Add Feedback"}
           </button>
         </div>
 

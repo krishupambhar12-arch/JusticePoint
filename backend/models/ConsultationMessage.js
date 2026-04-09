@@ -21,6 +21,10 @@ const consultationMessageSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  attorney_name: {
+    type: String,
+    default: null
+  },
   read: {
     type: Boolean,
     default: false

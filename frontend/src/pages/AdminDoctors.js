@@ -24,6 +24,7 @@ const AdminDoctors = () => {
     phone: '',
     gender: 'Male',
     qualification: '',
+    specialization: '',
     joiningDate: '',
     attorneyCode: ''
   });
@@ -75,20 +76,64 @@ const AdminDoctors = () => {
         return;
       }
       
-      const response = await fetch(API.ADMIN_CODES, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      // Fetch from both codes and attorney collections to get all attorneys
+      const [codesResponse, attorneysResponse] = await Promise.all([
+        fetch(API.ADMIN_CODES, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch(API.ADMIN_DOCTORS, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      ]);
+
+      const codesData = await codesResponse.json();
+      const attorneysData = await attorneysResponse.json();
+      
+      if (codesResponse.ok && attorneysResponse.ok) {
+        // Combine data from both collections
+        const allAttorneys = [];
+        
+        // Add attorneys from codes collection
+        if (codesData.codes && Array.isArray(codesData.codes)) {
+          codesData.codes.forEach(attorney => {
+            allAttorneys.push({
+              ...attorney,
+              source: 'codes'
+            });
+          });
         }
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setDoctors(data.codes || []);
+        
+        // Add attorneys from doctors collection
+        if (attorneysData.doctors && Array.isArray(attorneysData.doctors)) {
+          attorneysData.doctors.forEach(attorney => {
+            // Check if this attorney is already in the list
+            const existingIndex = allAttorneys.findIndex(a => a.email === attorney.email);
+            if (existingIndex === -1) {
+              allAttorneys.push({
+                ...attorney,
+                source: 'doctors'
+              });
+            }
+          });
+        }
+        
+        setDoctors(allAttorneys);
+        console.log("🔍 All attorneys loaded:", allAttorneys);
+        console.log("🔍 Attorneys from codes:", codesData.codes);
+        console.log("🔍 Attorneys from doctors:", attorneysData.doctors);
       } else {
-        setMessage(data.message || 'Error fetching attorneys');
+        const errorMessage = codesData.message || attorneysData.message || 'Error fetching attorneys';
+        setMessage(errorMessage);
       }
     } catch (error) {
       setMessage('Error connecting to server');
+      console.error("Fetch error:", error);
     }
     setLoading(false);
   }, [token, role]);
@@ -114,6 +159,10 @@ const AdminDoctors = () => {
     
     if (!formData.qualification.trim()) {
       errors.qualification = 'Qualification is required';
+    }
+    
+    if (!formData.specialization.trim()) {
+      errors.specialization = 'Specialization is required';
     }
     
     if (!formData.joiningDate.trim()) {
@@ -143,12 +192,15 @@ const AdminDoctors = () => {
     }
     setFormData({
       ...formData,
-      attorneyCode: code
+      attorneyCode: code,
+      joiningDate: formData.joiningDate || new Date().toISOString().split('T')[0]
     });
   };
 
   const handleAddDoctor = async (e) => {
     e.preventDefault();
+    console.log("🔍 handleAddDoctor called!");
+    console.log("🔍 Form submitted with data:", formData);
     
     console.log("🔍 Add Attorney Debug - Token:", token ? token.substring(0, 20) + "..." : "null");
     console.log("🔍 Add Attorney Debug - Role:", role);
@@ -171,8 +223,20 @@ const AdminDoctors = () => {
 
     setActionLoading(prev => ({ ...prev, creating: true }));
     try {
-      // Create attorney record in codes table
-      const response = await fetch(API.ADMIN_CODES, {
+      // Test with auth route
+      console.log("🔍 Frontend - Making API call to codes endpoint");
+      console.log("🔍 Frontend - Request URL:", "http://localhost:5000/admin/codes");
+      console.log("🔍 Frontend - Request data:", {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        gender: formData.gender,
+        qualification: formData.qualification,
+        joiningDate: formData.joiningDate || new Date().toISOString().split('T')[0],
+        attorneyCode: formData.attorneyCode
+      });
+      
+      const response = await fetch("http://localhost:5000/admin/codes", {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -184,23 +248,37 @@ const AdminDoctors = () => {
           phone: formData.phone,
           gender: formData.gender,
           qualification: formData.qualification,
-          joiningDate: formData.joiningDate,
+          specialization: formData.specialization,
+          joiningDate: formData.joiningDate || new Date().toISOString().split('T')[0],
           attorneyCode: formData.attorneyCode
         })
       });
 
+      console.log("🔍 Frontend - Response status:", response.status);
+      console.log("🔍 Frontend - Response ok:", response.ok);
+
       const data = await response.json();
+      console.log("🔍 Frontend - Response data:", data);
       
       if (response.ok) {
+        console.log("✅ Attorney creation successful!");
+        console.log("✅ Created attorney data:", data.code);
         setMessage('Attorney created successfully');
         setShowAddModal(false);
         resetForm();
+        
+        // Refresh the attorneys list
+        console.log("🔍 Refreshing attorneys list...");
         fetchDoctors();
       } else {
+        console.log("❌ Attorney creation failed:", data);
         setMessage(data.message || 'Error creating attorney');
       }
     } catch (error) {
-      setMessage('Error connecting to server');
+      console.error("❌ Frontend - Create attorney error:", error);
+      console.error("❌ Frontend - Error details:", error.message);
+      console.error("❌ Frontend - Error stack:", error.stack);
+      setMessage('Error connecting to server: ' + error.message);
     } finally {
       setActionLoading(prev => ({ ...prev, creating: false }));
     }
@@ -214,6 +292,7 @@ const AdminDoctors = () => {
       phone: doctor.phone || '',
       gender: doctor.gender || 'Male',
       qualification: doctor.qualification || '',
+      specialization: doctor.specialization || '',
       joiningDate: doctor.joiningDate || '',
       attorneyCode: doctor.attorneyCode || ''
     });
@@ -247,6 +326,7 @@ const AdminDoctors = () => {
           phone: formData.phone,
           gender: formData.gender,
           qualification: formData.qualification,
+          specialization: formData.specialization,
           joiningDate: formData.joiningDate,
           attorneyCode: formData.attorneyCode
         })
@@ -287,6 +367,7 @@ const AdminDoctors = () => {
       try {
         console.log("🔍 Frontend Delete Debug - Deleting attorney ID:", doctorId);
         console.log("🔍 Frontend Delete Debug - Token:", token ? token.substring(0, 20) + "..." : "null");
+        console.log("🔍 Frontend Delete Debug - API URL:", `${API.ADMIN_CODES}/${doctorId}`);
         
         const response = await fetch(`${API.ADMIN_CODES}/${doctorId}`, {
           method: 'DELETE',
@@ -296,10 +377,14 @@ const AdminDoctors = () => {
           }
         });
 
+        console.log("🔍 Frontend Delete Debug - Response status:", response.status);
+        console.log("🔍 Frontend Delete Debug - Response ok:", response.ok);
+
         const data = await response.json();
+        console.log("🔍 Frontend Delete Debug - Response data:", data);
         
         if (response.ok) {
-          setMessage(`Attorney "${doctorName}" deleted successfully (data preserved in database)`);
+          setMessage(`Attorney "${doctorName}" deleted successfully. Login access has been revoked.`);
           fetchDoctors();
         } else {
           setMessage(data.message || 'Error deleting attorney');
@@ -320,6 +405,7 @@ const AdminDoctors = () => {
       phone: '',
       gender: 'Male',
       qualification: '',
+      specialization: '',
       joiningDate: '',
       attorneyCode: ''
     });
@@ -395,6 +481,7 @@ const AdminDoctors = () => {
                     <th>Phone</th>
                     <th>Gender</th>
                     <th>Qualification</th>
+                    <th>Specialization</th>
                     <th>Joining Date</th>
                     <th>Attorney Code</th>
                     <th>Actions</th>
@@ -408,8 +495,9 @@ const AdminDoctors = () => {
                       <td>{doctor.phone}</td>
                       <td>{doctor.gender}</td>
                       <td>{doctor.qualification}</td>
-                      <td>{doctor.joiningDate}</td>
-                      <td>{doctor.attorneyCode}</td>
+                      <td>{doctor.specialization || "N/A"}</td>
+                      <td>{doctor.joiningDate ? new Date(doctor.joiningDate).toLocaleDateString() : "N/A"}</td>
+                      <td>{doctor.attorneyCode || "N/A"}</td>
                       <td>
                         <button
                           onClick={() => handleViewDoctor(doctor)}
@@ -533,6 +621,27 @@ const AdminDoctors = () => {
                     )}
                   </div>
                   <div className="form-group">
+                    <label htmlFor="specialization">Specialization *</label>
+                    <select
+                      id="specialization"
+                      name="specialization"
+                      value={formData.specialization}
+                      onChange={handleInputChange}
+                      className={formErrors.specialization ? 'error' : ''}
+                    >
+                      <option value="">Select Specialization</option>
+                      {specializations.map(spec => (
+                        <option key={spec} value={spec}>{spec}</option>
+                      ))}
+                    </select>
+                    {formErrors.specialization && (
+                      <span className="error-message">{formErrors.specialization}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
                     <label htmlFor="joiningDate">Joining Date *</label>
                     <input
                       type="date"
@@ -546,9 +655,6 @@ const AdminDoctors = () => {
                       <span className="error-message">{formErrors.joiningDate}</span>
                     )}
                   </div>
-                </div>
-
-                <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="attorneyCode">Attorney Code *</label>
                     <div className="attorney-code-input">
@@ -632,6 +738,10 @@ const AdminDoctors = () => {
                   <span className="detail-value">{viewingDoctor.qualification}</span>
                 </div>
                 <div className="detail-row">
+                  <span className="detail-label">Specialization:</span>
+                  <span className="detail-value">{viewingDoctor.specialization || 'N/A'}</span>
+                </div>
+                <div className="detail-row">
                   <span className="detail-label">Joining Date:</span>
                   <span className="detail-value">{viewingDoctor.joiningDate}</span>
                 </div>
@@ -679,6 +789,7 @@ const AdminDoctors = () => {
                           <th>Phone</th>
                           <th>Gender</th>
                           <th>Qualification</th>
+                          <th>Specialization</th>
                           <th>Joining Date</th>
                           <th>Attorney Code</th>
                         </tr>
@@ -691,6 +802,7 @@ const AdminDoctors = () => {
                             <td>{doctor.phone}</td>
                             <td>{doctor.gender}</td>
                             <td>{doctor.qualification}</td>
+                            <td>{doctor.specialization || 'N/A'}</td>
                             <td>{doctor.joiningDate}</td>
                             <td>{doctor.attorneyCode}</td>
                           </tr>

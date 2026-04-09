@@ -21,7 +21,7 @@ const ServiceIcon = ({ iconName, iconFile, size = 48, className = '' }) => {
     
     const iconUrl = iconFile.startsWith('http') 
       ? iconFile // Already a URL
-      : `http://localhost:5000/uploads/service-icons/${filename}`; // Construct URL for frontend
+      : `http://localhost:5000/uploads/services/${filename}`; // Construct URL for frontend
     
     return (
       <img 
@@ -39,7 +39,7 @@ const ServiceIcon = ({ iconName, iconFile, size = 48, className = '' }) => {
           // Simple fallback - show placeholder text
           e.target.style.display = 'none';
           const parent = e.target.parentElement;
-          if (!parent.dataset.placeholderAdded) {
+          if (parent && !parent.dataset.placeholderAdded) {
             parent.innerHTML += `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:#f8f9fa;border:2px solid #e9ecef;border-radius:50%;font-size:${size/2}px;color:#6c757d;">⚖️</div>`;
             parent.dataset.placeholderAdded = 'true';
           }

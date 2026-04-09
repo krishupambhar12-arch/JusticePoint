@@ -243,6 +243,12 @@ tbody tr:hover {
 button {
   cursor: pointer;
   font-family: var(--font-main);
+      padding: 8px 16px;
+    border-radius: 8px;
+    margin: 0px 10px 0px 0px;
+    background-color: green;
+    color: white;
+    font-weight: 900;
 }
 
 .delete-btn {

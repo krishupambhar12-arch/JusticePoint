@@ -16,8 +16,8 @@ const AttorneyListing = () => {
   const [searchParams] = useSearchParams();
 
   const specialities = [
-    "all", "Family Law", "Corporate Law", "Criminal Law",
-    "Civil Litigation", "General Practice"
+    "All", "Family Law", "Corporate Law", "Criminal Law", 'Civil Law','Real Estate Law','Tax Law','Immigration Law','Intellectual Property Law',
+    'Labor Law','Environmental Law', 'Data Protection Laws'
   ];
 
   const fetchAttorneys = useCallback(async () => {

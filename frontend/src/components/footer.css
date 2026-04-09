@@ -1,47 +1,177 @@
-@import "../styles/variables.css";
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
 
 /* --- Footer General --- */
 .site-footer {
-  padding: 3rem 1rem;
-  background: var(--color-dark-purple); /* palette dark */
-  color: var(--color-lightest);         /* light text */
-  text-align: center;
-  font-family: var(--font-main);
+  background: var(--color-dark-purple);
+  color: white;
+  font-family: 'Arial', sans-serif;
+  padding: 0;
+  margin-top: 94px;
 }
 
-/* --- Footer Text --- */
-.site-footer p {
-  font-size: 1rem;
-  margin: 0;
-  color: var(--color-lightest); /* consistent text color */
-}
-
-/* --- Footer Links Container --- */
-.footer-links {
+/* --- Footer Container --- */
+.footer-container {
   display: flex;
-  justify-content: center;
-  gap: 2rem;
-  margin-top: 1.5rem;
+  justify-content: space-between;
+  padding: 60px 5% 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  gap: 40px;
+  flex-wrap: wrap;
 }
 
-/* --- Individual Footer Text --- */
-.footer-text {
-  font-size: 1rem;
-  color: var(--color-soft-purple); /* subtle text */
+/* --- Footer Section --- */
+.footer-section {
+  flex: 1;
+  min-width: 250px;
+  max-width: 350px;
+}
+
+.footer-section h3.footer-title {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* --- Justice Point Section --- */
+.footer-description {
+  color: #f7f7f7;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 25px;
+}
+
+.social-icons {
+  display: flex;
+  gap: 12px;
+}
+
+.social-icon {
+  width: 36px;
+  height: 36px;
+  /* background: #f4f0f2; */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.social-icon:hover {
+  background: #ffffff;
+  transform: translateY(-2px);
+}
+
+/* --- Links Sections --- */
+.footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-links li {
+  margin-bottom: 12px;
+}
+
+.footer-links a {
+  color: #fafafa;
+  text-decoration: none;
+  font-size: 14px;
   transition: color 0.3s ease;
 }
 
-/* Optional hover effect */
-.footer-text:hover {
-  color: var(--color-lightest);
+.footer-links a:hover {
+  color: white;
 }
 
-/* Clickable footer link (Feedback) */
-.footer-link {
-  cursor: pointer;
-  text-decoration: none;
+/* --- Contact Info Section --- */
+.site-footer .contact-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 15px !important;
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  width: auto !important;
+  text-align: left !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
 }
 
-.footer-link:hover {
-  text-decoration: underline;
+.site-footer .contact-item {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+  color: #E9D5FF !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+.site-footer .contact-item i {
+  color: #ffffff !important;
+  font-size: 16px !important;
+  margin-top: 2px !important;
+  min-width: 16px !important;
+}
+
+.site-footer .contact-item span {
+  color: #ffffff !important;
+  font-size: 14px !important;
+}
+
+/* Override any conflicting h3 styles */
+.site-footer .contact-info h3 {
+  color: white !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  margin-bottom: 20px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* --- Footer Bottom --- */
+.footer-bottom {
+  background: var(--color-dark-purple);
+  padding: 20px 5%;
+  text-align: center;
+}
+
+.footer-bottom p {
+  color: #fefefe;
+  font-size: 13px;
+  margin: 0;
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 768px) {
+  .footer-container {
+    flex-direction: column;
+    padding: 40px 5% 30px;
+    gap: 30px;
+  }
+  
+  .footer-section {
+    max-width: 100%;
+  }
+  
+  .social-icons {
+    justify-content: center;
+  }
 }

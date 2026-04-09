@@ -6,6 +6,7 @@ import ClientSidebar from "../components/ClientSidebar";
 const ClientConsultation = () => {
   const [consultations, setConsultations] = useState([]);
   const [doctors, setDoctors] = useState([]);
+  const [loadingAttorneys, setLoadingAttorneys] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -46,34 +47,49 @@ const ClientConsultation = () => {
 
   const fetchConsultations = async () => {
     try {
+      console.log("🔍 Fetching client consultations...");
       const res = await fetch(API.CLIENT_CONSULTATIONS, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (res.ok) {
+      console.log("🔍 Consultations response:", data);
+      if (data.success) {
         setConsultations(data.consultations || []);
         if (data.consultations && data.consultations.length > 0 && !selectedConsultation) {
           setSelectedConsultation(data.consultations[0]);
         }
+        console.log(`✅ Found ${data.consultations?.length || 0} consultations`);
+      } else {
+        console.error("❌ Failed to fetch consultations:", data.message);
       }
     } catch (error) {
-      console.error("Error fetching consultations:", error);
+      console.error("❌ Error fetching consultations:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const fetchAttorneys = async () => {
+    setLoadingAttorneys(true);
     try {
+      console.log("🔍 Fetching attorneys for consultation...");
       const res = await fetch(API.CONSULTATION_ATTORNEYS, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (res.ok) {
+      console.log("🔍 Attorneys response:", data);
+      if (data.success) {
         setDoctors(data.attorneys || []);
+        console.log(`✅ Found ${data.attorneys?.length || 0} attorneys`);
+      } else {
+        console.error("❌ Failed to fetch attorneys:", data.message);
+        alert(data.message || "Failed to fetch attorneys");
       }
     } catch (error) {
-      console.error("Error fetching doctors:", error);
+      console.error("❌ Error fetching doctors:", error);
+      alert("Failed to fetch attorneys. Please try again.");
+    } finally {
+      setLoadingAttorneys(false);
     }
   };
 
@@ -93,24 +109,27 @@ const ClientConsultation = () => {
 
   const startConsultation = async (doctorId) => {
     try {
+      console.log("🔍 Starting consultation with attorney:", doctorId);
       const res = await fetch(API.CREATE_CONSULTATION, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ doctor_id: doctorId }),
+        body: JSON.stringify({ attorney_id: doctorId }),
       });
       const data = await res.json();
-      if (res.ok) {
+      console.log("🔍 Consultation creation response:", data);
+      if (data.success) {
         fetchConsultations();
         setShowDoctorList(false);
         setSelectedDoctor(null);
+        alert("Consultation started successfully!");
       } else {
         alert(data.message || "Failed to start consultation");
       }
     } catch (error) {
-      console.error("Error starting consultation:", error);
+      console.error("❌ Error starting consultation:", error);
       alert("Failed to start consultation");
     }
   };
@@ -196,7 +215,7 @@ const ClientConsultation = () => {
               <button
                 className="ai-advisor-btn"
                 onClick={() => setShowAIAdvisor(!showAIAdvisor)}
-                title="Get AI Health Advice"
+                title="Get AI Legal Advice"
               >
                 🤖 AI Advisor
               </button>
@@ -204,7 +223,7 @@ const ClientConsultation = () => {
                 className="new-consultation-btn"
                 onClick={() => setShowDoctorList(!showDoctorList)}
               >
-                + New Consultation
+                 New Consultation
               </button>
             </div>
           </div>
@@ -212,12 +231,12 @@ const ClientConsultation = () => {
           {showAIAdvisor && (
             <div className="ai-advisor-panel">
               <h3>AI Legal Advisor</h3>
-              <p className="ai-description">Ask me about your health concerns for quick advice</p>
+              <p className="ai-description">Ask me about your legal concerns for quick advice</p>
               <div className="ai-input-section">
                 <textarea
                   value={aiQuestion}
                   onChange={(e) => setAiQuestion(e.target.value)}
-                  placeholder="E.g., I have fever and headache, what should I do?"
+                  placeholder="E.g., I need advice about contract disputes, what should I do?"
                   rows="3"
                   className="ai-question-input"
                 />
@@ -254,7 +273,9 @@ const ClientConsultation = () => {
           {showDoctorList && (
             <div className="doctor-list">
               <h3>Select Attorney</h3>
-              {doctors.length === 0 ? (
+              {loadingAttorneys ? (
+                <p>Loading attorneys...</p>
+              ) : doctors.length === 0 ? (
                 <p>No attorneys available</p>
               ) : (
                 <div className="doctor-items">
@@ -303,7 +324,7 @@ const ClientConsultation = () => {
                   onClick={() => setSelectedConsultation(consultation)}
                 >
                   <div className="consultation-info">
-                    <strong>Attorney {consultation.doctor_name || consultation.attorney?.name || 'Unknown'}</strong>
+                    <strong>Attorney {consultation.attorney_name || consultation.attorney?.name || 'Unknown'}</strong>
                     <small>{consultation.specialization || consultation.attorney?.specialization || 'General Practice'}</small>
                     <span className={`status ${consultation.status.toLowerCase()}`}>
                       {consultation.status}
@@ -320,7 +341,7 @@ const ClientConsultation = () => {
             <>
               <div className="chat-header">
                 <div>
-                  <h3>Attorney {selectedConsultation.doctor_name || selectedConsultation.attorney?.name || 'Unknown'}</h3>
+                  <h3>Attorney {selectedConsultation.attorney_name || selectedConsultation.attorney?.name || 'Unknown'}</h3>
                   <small>{selectedConsultation.specialization || selectedConsultation.attorney?.specialization || 'General Practice'}</small>
                 </div>
                 <span className={`status ${selectedConsultation.status.toLowerCase()}`}>

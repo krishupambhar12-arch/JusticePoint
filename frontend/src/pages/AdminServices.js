@@ -10,6 +10,7 @@ const AdminServices = () => {
   const [message, setMessage] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
+  const [refreshIcons, setRefreshIcons] = useState(false);
   const [actionLoading, setActionLoading] = useState({
     creating: false,
     updating: false,
@@ -21,7 +22,7 @@ const AdminServices = () => {
     category: 'Legal Service',
     iconFile: null
   });
-  const [formErrors, setFormErrors] = useState({});
+  const [formErrors, setFormErrors] = useState({});    
 
   const categories = ['Legal Service', 'Consultation', 'Document Review', 'Court Representation', 'Legal Advice'];
   const icons = ['⚖️', '📋', '🏛️', '💼', '🔍', '📝', '⭐'];
@@ -201,6 +202,7 @@ const AdminServices = () => {
       
       const data = await response.json();
       if (response.ok) {
+        console.log('Service updated successfully:', data);
         setMessage('Service updated successfully');
         setShowAddModal(false);
         setEditingService(null);
@@ -210,7 +212,10 @@ const AdminServices = () => {
           category: 'Legal Service',
           iconFile: null
         });
-        fetchServices();
+        // Refresh services to show updated icon
+        setRefreshIcons(true);
+        await fetchServices();
+        setTimeout(() => setRefreshIcons(false), 1000);
       } else {
         setMessage(data.message || 'Error updating service');
       }
@@ -304,6 +309,7 @@ const AdminServices = () => {
                           iconFile={service.icon_file}
                           size={20} 
                           className="table-icon"
+                          forceRefresh={refreshIcons}
                         />
                       </td>
                       <td>{service.service_name}</td>

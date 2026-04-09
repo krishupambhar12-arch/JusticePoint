@@ -19,14 +19,14 @@ const GoogleCallback = () => {
           console.error('Google OAuth error:', error, error_description);
           
           // Handle specific Google OAuth errors
-          let errorMessage = "❌ Google login failed. Redirecting to login...";
+          let errorMessage = " Google login failed. Redirecting to login...";
           
           if (error === 'access_denied') {
-            errorMessage = "❌ Access denied. You must grant permission to continue.";
+            errorMessage = " Access denied. You must grant permission to continue.";
           } else if (error === 'popup_closed_by_user') {
-            errorMessage = "❌ Login window was closed. Please try again.";
+            errorMessage = " Login window was closed. Please try again.";
           } else if (error_description) {
-            errorMessage = `❌ ${error_description}`;
+            errorMessage = ` ${error_description}`;
           }
           
           setMessage(errorMessage);
@@ -78,8 +78,8 @@ const GoogleCallback = () => {
                 }, 2000);
               }
             } else {
-              console.error('❌ No token received from backend:', response.data);
-              setMessage("❌ Authentication failed. No token received. Redirecting to login...");
+              console.error(' No token received from backend:', response.data);
+              setMessage(" Authentication failed. No token received. Redirecting to login...");
               setTimeout(() => navigate('/login'), 2000);
             }
           } catch (axiosError) {
@@ -87,27 +87,27 @@ const GoogleCallback = () => {
             console.error('🚨 Error response:', axiosError.response?.data);
             console.error('🚨 Error status:', axiosError.response?.status);
             
-            let errorMessage = "❌ Google login failed. Please try again.";
+            let errorMessage = " Google login failed. Please try again.";
             
             if (axiosError.response?.data?.error === 'EMAIL_NOT_VERIFIED') {
-              errorMessage = "❌ Please verify your Google account email first.";
+              errorMessage = " Please verify your Google account email first.";
             } else if (axiosError.response?.data?.error === 'TOKEN_EXCHANGE_FAILED') {
-              errorMessage = "❌ Failed to authenticate with Google. Please try again.";
+              errorMessage = " Failed to authenticate with Google. Please try again.";
             } else if (axiosError.response?.data?.message) {
-              errorMessage = `❌ ${axiosError.response.data.message}`;
+              errorMessage = ` ${axiosError.response.data.message}`;
             }
             
             setMessage(errorMessage);
             setTimeout(() => navigate('/login'), 3000);
           }
         } else {
-          console.error('❌ No authorization code received');
-          setMessage("❌ No authorization code received. Redirecting to login...");
+          console.error(' No authorization code received');
+          setMessage(" No authorization code received. Redirecting to login...");
           setTimeout(() => navigate('/login'), 2000);
         }
       } catch (error) {
         console.error('🚨 Google callback error:', error);
-        setMessage("❌ An error occurred during Google login. Redirecting to login...");
+        setMessage(" An error occurred during Google login. Redirecting to login...");
         setTimeout(() => navigate('/login'), 2000);
       }
     };

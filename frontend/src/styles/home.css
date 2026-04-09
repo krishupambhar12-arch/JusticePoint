@@ -118,10 +118,10 @@ body, html {
 
 /* --- Section Titles (Select a Speciality / Symptoms) --- */
 h2 {
-  margin: 5rem 0 2.5rem 0;    /* top margin increased to 5rem, bottom 2.5rem */
+  margin: 3rem 0 2.5rem 0;    /* top margin increased to 5rem, bottom 2.5rem */
   font-size: 2rem;            /* readable & prominent */
   font-weight: 700;           /* bold but clean */
-  color: var(--color-regular-purple);
+  color: white;
   text-align: center;         /* centered */
   letter-spacing: 1px;
   position: relative;
@@ -190,11 +190,12 @@ h2::after {
 
 /* --- Symptoms Section --- */
 .symptoms {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-  margin-bottom: 3rem; /* bottom spacing */
-  padding: 0 26rem;
+ display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 69px;
+    margin-bottom: 3rem;
+    padding: 0 20rem;
+   
 }
 
 .symptom {

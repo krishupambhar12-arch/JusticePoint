@@ -10,10 +10,10 @@ const Services = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const navigate = useNavigate();
 
-  const categories = ["all", "Legal Service", "Consultation", "Document Review", "Court Representation", "Legal Advice"];
+  const categories = ["All", "Legal Service", "Consultation", "Document Review", "Court Representation", "Legal Advice"];
 
   useEffect(() => {
     fetchServices();
@@ -27,6 +27,18 @@ const Services = () => {
       if (response.ok) {
         setServices(data.services || []);
         console.log('Services set:', data.services);
+        
+        // Debug: Check if services have icon_file
+        data.services.forEach((service, index) => {
+          console.log(`Service ${index}:`, {
+            id: service.id,
+            name: service.service_name,
+            icon: service.icon,
+            icon_file: service.icon_file
+          });
+        });
+      } else {
+        console.error('Failed to fetch services:', data.message);
       }
     } catch (error) {
       console.error("Error fetching services:", error);
@@ -38,7 +50,7 @@ const Services = () => {
   const filteredServices = services.filter(service => {
     const matchesSearch = service.service_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (service.description && service.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory = selectedCategory === "all" || service.category === selectedCategory;
+    const matchesCategory = selectedCategory === "All" || service.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 

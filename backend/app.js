@@ -32,9 +32,40 @@ const attorneyRoute = require("./routes/doctor"); // attorney routes
 const adminRoute = require("./routes/admin");
 const aiAdvisorRoute = require("./routes/aiAdvisor");
 const servicesRoute = require("./routes/services");
+const consultationRoute = require("./routes/consultationRoutes");
 
 app.use(express.json())
 app.use(cors());
+
+// Serve static files with CORS headers
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+}, express.static('uploads'));
+
+// Add a test route to verify uploads directory
+app.get('/uploads-test', (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+  const uploadsDir = path.join(__dirname, 'uploads');
+  
+  fs.readdir(uploadsDir, (err, files) => {
+    if (err) {
+      return res.status(500).json({ error: 'Cannot read uploads directory', details: err.message });
+    }
+    
+    res.json({ 
+      message: 'Uploads directory accessible',
+      files: files.slice(0, 10), // Show first 10 files
+      totalFiles: files.length,
+      uploadsPath: uploadsDir
+    });
+  });
+});
+
+app.use('/images', express.static(Path.join(__dirname, 'public/images')));
 
 // Log only API route path for backend calls
 app.use((req, res, next) => {
@@ -49,10 +80,10 @@ app.use((req, res, next) => {
 //      res.send("Welcome to the Justice App API");
 // })
 
-app.use('/uploads', express.static('uploads'));
-app.use('/images', express.static(Path.join(__dirname, 'public/images')));
-
 app.use('/user', userRoute);
+
+// Consultation routes
+app.use('/consultation', consultationRoute);
 
 // Attorney routes
 app.use('/attorney', attorneyRoute);

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import "../styles/login.css"; // your existing CSS
+import React, { useState, useEffect } from "react";
+import "../styles/login-specific.css"; // Login specific CSS only
 import "../styles/variables.css";
 import { API } from "../config/api";
 import { useNavigate, Link } from "react-router-dom";
@@ -11,6 +11,68 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
+  // Handle Google OAuth callback and check if user is already logged in
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const role = urlParams.get('role');
+    const name = urlParams.get('name');
+    const email = urlParams.get('email');
+    const error = urlParams.get('error');
+    
+    // Check if user is already logged in
+    const existingToken = localStorage.getItem("token");
+    const existingRole = localStorage.getItem("role");
+    
+    // If user is already logged in and is a client, redirect to dashboard
+    if (existingToken && existingRole === "Client" && !token) {
+      console.log('User already logged in, redirecting to dashboard...');
+      navigate("/client/dashboard", { replace: true });
+      return;
+    }
+    
+    // Clear URL parameters to prevent infinite loops
+    if (token || error) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // Handle error case
+    if (error) {
+      setMessage("❌ Google login failed. Please try again.");
+      return;
+    }
+
+    // Handle successful login
+    if (token && role && name && email) {
+      console.log('Google OAuth callback received:', { token, role, name, email });
+      
+      // Only allow Client users
+      if (role !== "Client") {
+        console.log('Invalid role for client login:', role);
+        setMessage("❌ Access denied. This login is for clients only.");
+        return;
+      }
+      
+      // Save user data to localStorage
+      localStorage.setItem("token", token);
+      localStorage.setItem("role", role);
+      localStorage.setItem("name", name);
+      localStorage.setItem("email", email);
+      
+      // Clear redirect path
+      localStorage.removeItem('redirectAfterLogin');
+      
+      // Show success message
+      setMessage("✅ Google Login Successful! Redirecting...");
+      
+      // Redirect to client dashboard immediately
+      console.log('Redirecting to client dashboard...');
+      setTimeout(() => {
+        navigate("/client/dashboard", { replace: true });
+      }, 1000);
+    }
+  }, [navigate]);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -19,16 +81,25 @@ const Login = () => {
     try {
       switch (provider) {
         case 'google':
-          // Direct redirect to backend Google OAuth route
-          window.location.href = 'http://localhost:5000/user/auth/google';
+          // Store current page for redirect after Google login
+          localStorage.setItem('redirectAfterLogin', '/client/dashboard');
+          // Direct redirect to backend Google OAuth route with callback URL
+          const googleCallbackUrl = encodeURIComponent('http://localhost:3000/login');
+          window.location.href = `http://localhost:5000/user/auth/google?callback_url=${googleCallbackUrl}`;
           return;
         case 'facebook':
-          // Direct redirect to backend Facebook OAuth route
-          window.location.href = 'http://localhost:5000/user/auth/facebook';
+          // Store current page for redirect after Facebook login
+          localStorage.setItem('redirectAfterLogin', '/client/dashboard');
+          // Direct redirect to backend Facebook OAuth route with callback URL
+          const facebookCallbackUrl = encodeURIComponent('http://localhost:3000/login');
+          window.location.href = `http://localhost:5000/user/auth/facebook?callback_url=${facebookCallbackUrl}`;
           return;
         case 'linkedin':
-          // Direct redirect to backend LinkedIn OAuth route
-          window.location.href = 'http://localhost:5000/user/auth/linkedin';
+          // Store current page for redirect after LinkedIn login
+          localStorage.setItem('redirectAfterLogin', '/client/dashboard');
+          // Direct redirect to backend LinkedIn OAuth route with callback URL
+          const linkedinCallbackUrl = encodeURIComponent('http://localhost:3000/login');
+          window.location.href = `http://localhost:5000/user/auth/linkedin?callback_url=${linkedinCallbackUrl}`;
           return;
         default:
           return;

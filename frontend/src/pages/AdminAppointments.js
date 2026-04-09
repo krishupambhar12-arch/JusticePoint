@@ -11,6 +11,8 @@ const AdminAppointments = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [showBookModal, setShowBookModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewAppointment, setViewAppointment] = useState(null);
   const [users, setUsers] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [actionLoading, setActionLoading] = useState({
@@ -31,8 +33,6 @@ const AdminAppointments = () => {
   const [patientSearch, setPatientSearch] = useState('');
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
   const [selectedPatientName, setSelectedPatientName] = useState('');
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState(null);
 
   const token = localStorage.getItem('token');
 
@@ -40,13 +40,6 @@ const AdminAppointments = () => {
     fetchAppointments();
     fetchUsers();
     fetchDoctors();
-    
-    // Auto-refresh every 30 seconds to get latest appointments and status updates
-    const interval = setInterval(() => {
-      fetchAppointments();
-    }, 30000);
-    
-    return () => clearInterval(interval);
   }, []);
 
   // Close dropdown when clicking outside
@@ -82,7 +75,12 @@ const AdminAppointments = () => {
 
   const fetchDoctors = async () => {
     try {
-      const response = await fetch(API.ALL_DOCTORS);
+      const response = await fetch(API.ADMIN_DOCTORS, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       const data = await response.json();
       if (response.ok) {
         setDoctors(data.doctors || []);
@@ -187,11 +185,6 @@ const AdminAppointments = () => {
     } finally {
       setActionLoading(prev => ({ ...prev, markingExpired: false }));
     }
-  };
-
-  const handleViewAppointment = (appointment) => {
-    setSelectedAppointment(appointment);
-    setShowViewModal(true);
   };
 
   const handleInputChange = (e) => {
@@ -314,13 +307,13 @@ const AdminAppointments = () => {
               >
                 + Add Appointment
               </button> */}
-            <button 
+            {/* <button 
               onClick={markExpiredAppointments}
               className="mark-expired-btn"
               disabled={actionLoading.markingExpired}
             >
               {actionLoading.markingExpired ? 'Please wait...' : 'Mark Expired Appointments'}
-            </button>
+            </button> */}
             </div>
           </div>
           <div className="appointments-table">
@@ -329,9 +322,8 @@ const AdminAppointments = () => {
                 <tr>
                   <th>Date</th>
                   <th>Time</th>
-                  <th>Subject</th>
-                  <th>Client Name</th>
-                  <th>Attorney Name</th>
+                  <th>Client</th>
+                  <th>Attorney</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -342,75 +334,75 @@ const AdminAppointments = () => {
                     <td>{appointment.date}</td>
                     <td>{appointment.time}</td>
                     <td>
-                      <div style={{ maxWidth: '120px' }}>
-                        <small>{appointment.subject || 'N/A'}</small>
+                      <div>
+                        <strong>{appointment.patient.name}</strong>
+                        <br />
+                        <small>{appointment.patient.email}</small>
+                        <br />
+                        <small>{appointment.patient.phone}</small>
                       </div>
                     </td>
                     <td>
-                      <strong>{appointment.user?.name || appointment.patient?.name || 'Unknown Client'}</strong>
+                      <div>
+                        <strong>{appointment.doctor?.name || 'Unknown Attorney'}</strong>
+                        <br />
+                        <small>{appointment.doctor?.specialization || 'No specialization'}</small>
+                        {appointment.doctor?.email && (
+                          <>
+                            <br />
+                            <small>{appointment.doctor.email}</small>
+                          </>
+                        )}
+                        {appointment.doctor?.phone && (
+                          <>
+                            <br />
+                            <small>{appointment.doctor.phone}</small>
+                          </>
+                        )}
+                      </div>
                     </td>
                     <td>
-                      <strong>{appointment.attorney?.name || appointment.doctor?.name || appointment.attorneyName || 'Unknown Attorney'}</strong>
-                    </td>
-                    <td>
-                      <span 
-                        style={{
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          fontWeight: 'bold',
-                          textTransform: 'uppercase',
-                          backgroundColor: getStatusColor(appointment.status),
-                          color: appointment.status === 'Pending' ? '#000' : '#fff'
-                        }}
+                      <select 
+                        value={appointment.status}
+                        onChange={(e) => updateAppointmentStatus(appointment.id, e.target.value)}
+                        className="status-select"
+                        disabled={actionLoading.updating === appointment.id}
                       >
-                        {appointment.status}
-                      </span>
+                        <option value="Pending">Pending</option>
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                        <option value="Rejected">Rejected</option>
+                        <option value="Expired">Expired</option>
+                      </select>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: '5px', flexDirection: 'column' }}>
+                      <div className="action-buttons">
                         <button 
-                          onClick={() => handleViewAppointment(appointment)}
-                          style={{ 
-                            fontSize: '11px', 
-                            padding: '4px 8px',
-                            backgroundColor: '#28a745',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
+                          onClick={() => {
+                            setViewAppointment(appointment);
+                            setShowViewModal(true);
                           }}
+                          className="view-btn"
+                          title="View Details"
                         >
                           View
                         </button>
-                        <select 
-                          value={appointment.status}
-                          onChange={(e) => updateAppointmentStatus(appointment.id, e.target.value)}
-                          className="status-select"
-                          disabled={actionLoading.updating === appointment.id}
-                          style={{ fontSize: '12px', padding: '4px' }}
-                        >
-                          <option value="Pending">Pending</option>
-                          <option value="Confirmed">Confirmed</option>
-                          <option value="Completed">Completed</option>
-                          <option value="Cancelled">Cancelled</option>
-                          <option value="Rejected">Rejected</option>
-                          <option value="Expired">Expired</option>
-                        </select>
                         <button 
                           onClick={() => deleteAppointment(appointment.id)}
                           className="delete-btn"
                           disabled={actionLoading.deleting === appointment.id}
-                          style={{ fontSize: '11px', padding: '4px 8px' }}
+                          title="Delete Appointment"
                         >
-                          {actionLoading.deleting === appointment.id ? '...' : 'Delete'}
+                          
+                          {actionLoading.deleting === appointment.id ? 'Please wait...' : ' Delete'}
                         </button>
                       </div>
                     </td>
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan="7" className="no-appointments">No appointments found</td>
+                    <td colSpan="6" className="no-appointments">No appointments found</td>
                   </tr>
                 )}
               </tbody>
@@ -621,9 +613,9 @@ const AdminAppointments = () => {
         )}
 
         {/* View Appointment Modal */}
-        {showViewModal && selectedAppointment && (
+        {showViewModal && viewAppointment && (
           <div className="modal-overlay" onClick={() => setShowViewModal(false)}>
-            <div className="modal-content" style={{ maxWidth: '800px', maxHeight: '90vh', overflow: 'auto' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content view-modal" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h3>Appointment Details</h3>
                 <button 
@@ -633,110 +625,91 @@ const AdminAppointments = () => {
                   ×
                 </button>
               </div>
-              
-              <div className="modal-body" style={{ padding: '20px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                  
-                  {/* Left Column - Basic Info */}
-                  <div>
-                    <h4 style={{ marginBottom: '15px', color: '#333' }}>📅 Basic Information</h4>
-                    <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '8px' }}>
-                      <p><strong>Date:</strong> {selectedAppointment.date}</p>
-                      <p><strong>Time:</strong> {selectedAppointment.time}</p>
-                      <p><strong>Status:</strong> 
-                        <span style={{
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          fontWeight: 'bold',
-                          textTransform: 'uppercase',
-                          backgroundColor: getStatusColor(selectedAppointment.status),
-                          color: selectedAppointment.status === 'Pending' ? '#000' : '#fff',
-                          marginLeft: '10px'
-                        }}>
-                          {selectedAppointment.status}
-                        </span>
-                      </p>
-                      <p><strong>Created:</strong> {selectedAppointment.createdDate} at {selectedAppointment.createdTime}</p>
-                      <p><strong>Last Updated:</strong> {selectedAppointment.lastUpdatedDate} at {selectedAppointment.lastUpdatedTime}</p>
-                    </div>
+              <div className="modal-body">
+                <div className="detail-section">
+                  <h4>Client Information</h4>
+                  <div className="detail-row">
+                    <label>Name:</label>
+                    <span>{viewAppointment.patient?.name || 'N/A'}</span>
                   </div>
-
-                  {/* Right Column - Case Details */}
-                  <div>
-                    <h4 style={{ marginBottom: '15px', color: '#333' }}>📝 Case Details</h4>
-                    <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '8px' }}>
-                      <p><strong>Subject:</strong> {selectedAppointment.subject || 'N/A'}</p>
-                      <p><strong>Purpose:</strong> {selectedAppointment.purpose || 'N/A'}</p>
-                      <p><strong>Case Summary:</strong></p>
-                      <p style={{ fontStyle: 'italic', marginLeft: '10px' }}>
-                        {selectedAppointment.caseSummary || 'No case summary provided'}
-                      </p>
-                      <p><strong>Documents:</strong> {selectedAppointment.documents || 'N/A'}</p>
-                      <p><strong>Desired Outcome:</strong> {selectedAppointment.desiredOutcome || 'N/A'}</p>
-                    </div>
+                  <div className="detail-row">
+                    <label>Email:</label>
+                    <span>{viewAppointment.patient?.email || 'N/A'}</span>
                   </div>
-
-                  {/* Client Details */}
-                  <div>
-                    <h4 style={{ marginBottom: '15px', color: '#333' }}>👤 Client Information</h4>
-                    <div style={{ backgroundColor: '#e3f2fd', padding: '15px', borderRadius: '8px' }}>
-                      <p><strong>Name:</strong> {selectedAppointment.user?.name || selectedAppointment.patient?.name || 'N/A'}</p>
-                      <p><strong>Email:</strong> {selectedAppointment.user?.email || selectedAppointment.patient?.email || 'N/A'}</p>
-                      <p><strong>Phone:</strong> {selectedAppointment.user?.phone || selectedAppointment.patient?.phone || 'N/A'}</p>
-                      <p><strong>Role:</strong> {selectedAppointment.user?.role || 'Client'}</p>
-                      <p><strong>Member Since:</strong> {selectedAppointment.user?.signupDate || 'N/A'}</p>
-                      {selectedAppointment.user?.profilePicture && (
-                        <div style={{ marginTop: '10px' }}>
-                          <img 
-                            src={selectedAppointment.user.profilePicture} 
-                            alt="Client Profile" 
-                            style={{ width: '60px', height: '60px', borderRadius: '50%', border: '2px solid #ddd' }}
-                          />
-                        </div>
-                      )}
-                    </div>
+                  <div className="detail-row">
+                    <label>Phone:</label>
+                    <span>{viewAppointment.patient?.phone || 'N/A'}</span>
                   </div>
+                </div>
 
-                  {/* Attorney Details */}
-                  <div>
-                    <h4 style={{ marginBottom: '15px', color: '#333' }}>👨‍⚖️ Attorney Information</h4>
-                    <div style={{ backgroundColor: '#fff3e0', padding: '15px', borderRadius: '8px' }}>
-                      <p><strong>Name:</strong> {selectedAppointment.attorney?.name || selectedAppointment.doctor?.name || selectedAppointment.attorneyName || 'N/A'}</p>
-                      <p><strong>Email:</strong> {selectedAppointment.attorney?.email || selectedAppointment.doctor?.email || 'N/A'}</p>
-                      <p><strong>Phone:</strong> {selectedAppointment.attorney?.phone || selectedAppointment.doctor?.phone || 'N/A'}</p>
-                      <p><strong>Specialization:</strong> {selectedAppointment.attorney?.specialization || selectedAppointment.doctor?.specialization || selectedAppointment.attorneySpecialization || 'N/A'}</p>
-                      <p><strong>Fees:</strong> ₹{selectedAppointment.attorney?.fees || selectedAppointment.doctor?.fees || selectedAppointment.attorneyFees || 0}</p>
-                      {selectedAppointment.attorney?.qualification && (
-                        <p><strong>Qualification:</strong> {selectedAppointment.attorney.qualification}</p>
-                      )}
-                      {selectedAppointment.attorney?.experience && (
-                        <p><strong>Experience:</strong> {selectedAppointment.attorney.experience} years</p>
-                      )}
-                      {selectedAppointment.attorney?.barNumber && (
-                        <p><strong>Bar Number:</strong> {selectedAppointment.attorney.barNumber}</p>
-                      )}
-                      {selectedAppointment.attorney?.officeAddress && (
-                        <p><strong>Office:</strong> {selectedAppointment.attorney.officeAddress}</p>
-                      )}
-                    </div>
+                <div className="detail-section">
+                  <h4>Attorney Information</h4>
+                  <div className="detail-row">
+                    <label>Name:</label>
+                    <span>{viewAppointment.doctor?.name || 'N/A'}</span>
                   </div>
+                  <div className="detail-row">
+                    <label>Specialization:</label>
+                    <span>{viewAppointment.doctor?.specialization || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <label>Email:</label>
+                    <span>{viewAppointment.doctor?.email || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <label>Phone:</label>
+                    <span>{viewAppointment.doctor?.phone || 'N/A'}</span>
+                  </div>
+                </div>
 
+                <div className="detail-section">
+                  <h4>Appointment Details</h4>
+                  <div className="detail-row">
+                    <label>Date:</label>
+                    <span>{viewAppointment.date}</span>
+                  </div>
+                  <div className="detail-row">
+                    <label>Time:</label>
+                    <span>{viewAppointment.time}</span>
+                  </div>
+                  <div className="detail-row">
+                    <label>Status:</label>
+                    <span className={`status-badge status-${viewAppointment.status?.toLowerCase()}`}>
+                      {viewAppointment.status}
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <label>Fees:</label>
+                    <span>₹{viewAppointment.attorneyFees || 0}</span>
+                  </div>
+                </div>
+
+                <div className="detail-section">
+                  <h4>Case Information</h4>
+                  <div className="detail-row full-width">
+                    <label>Subject:</label>
+                    <span>{viewAppointment.subject || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row full-width">
+                    <label>Purpose:</label>
+                    <span>{viewAppointment.purpose || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row full-width">
+                    <label>Case Summary:</label>
+                    <span>{viewAppointment.caseSummary || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row full-width">
+                    <label>Documents:</label>
+                    <span>{viewAppointment.documents || 'N/A'}</span>
+                  </div>
+                  <div className="detail-row full-width">
+                    <label>Desired Outcome:</label>
+                    <span>{viewAppointment.desiredOutcome || 'N/A'}</span>
+                  </div>
                 </div>
               </div>
-
-              <div className="modal-footer" style={{ padding: '20px', borderTop: '1px solid #ddd', textAlign: 'right' }}>
-                <button 
-                  onClick={() => setShowViewModal(false)}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#6c757d',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
+              <div className="modal-footer">
+                <button className="btn-close" onClick={() => setShowViewModal(false)}>
                   Close
                 </button>
               </div>

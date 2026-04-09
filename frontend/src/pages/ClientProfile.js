@@ -39,6 +39,7 @@ const ClientProfile = () => {
     isSocialLogin: false,
     provider: ""
   });
+  const [imageRefreshKey, setImageRefreshKey] = useState(0); // Force image refresh
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -149,9 +150,10 @@ const ClientProfile = () => {
       if (!res.ok) throw new Error(data.message || "Failed to upload photo");
 
       // Update local state with response data
-      setPatient(data.user);
+      setPatient(prev => ({ ...prev, ...data.user }));
       setProfileImage(null); // Clear the selected file
       setImagePreview(null); // Clear the preview
+      setImageRefreshKey(prev => prev + 1); // Force image refresh
       setError("✅ Photo uploaded successfully!");
       
       console.log('✅ Photo uploaded successfully:', data.user.profilePicture);
@@ -267,10 +269,11 @@ const ClientProfile = () => {
       }
 
       // Update local state with response data immediately
-      setPatient(data.user);
+      setPatient(prev => ({ ...prev, ...data.user }));
       setEdit(false); // Exit edit mode
       setProfileImage(null); // Clear the selected file
       setImagePreview(null); // Clear the preview
+      setImageRefreshKey(prev => prev + 1); // Force image refresh
       
       // Show success message
       setError("✅ Profile updated successfully! Changes are now visible.");
@@ -375,20 +378,40 @@ const ClientProfile = () => {
                       className="profile-image"
                     />
                   ) : patient.profilePicture ? (
-                    <img 
-                      src={`http://localhost:5000/uploads/${patient.profilePicture}`} 
-                      alt="Profile" 
-                      className="profile-image"
-                      onLoad={() => console.log('Profile image loaded successfully')}
-                      onError={(e) => {
-                        console.log('Failed to load profile image:', patient.profilePicture);
-                        e.target.onerror = null; // Prevent infinite loop
-                        e.target.style.display = 'none';
-                        if (e.target.nextSibling) {
-                          e.target.nextSibling.style.display = 'flex';
-                        }
-                      }}
-                    />
+                    <>
+                      <img 
+                        key={`${patient.profilePicture}-${imageRefreshKey}`} // Force re-render when image changes
+                        src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/${patient.profilePicture}`} 
+                        alt="Profile" 
+                        className="profile-image"
+                        style={{ border: '2px solid red' }} // Debug border
+                        onLoad={(e) => {
+                          console.log('✅ Profile image loaded successfully');
+                          console.log('🔍 Image element:', e.target);
+                          console.log('🔍 Image natural dimensions:', e.target.naturalWidth, 'x', e.target.naturalHeight);
+                          console.log('🔍 Image display dimensions:', e.target.width, 'x', e.target.height);
+                          console.log('🔍 Image src:', e.target.src);
+                        }}
+                        onError={(e) => {
+                          console.log('Failed to load profile image:', patient.profilePicture);
+                          e.target.onerror = null; // Prevent infinite loop
+                          // Hide the broken image and show placeholder
+                          e.target.style.display = 'none';
+                          const container = e.target.parentNode;
+                          if (container && !container.querySelector('.profile-image-placeholder')) {
+                            const placeholder = document.createElement('div');
+                            placeholder.className = 'profile-image-placeholder';
+                            placeholder.textContent = patient.name ? patient.name.charAt(0).toUpperCase() : 'U';
+                            placeholder.style.display = 'flex';
+                            container.appendChild(placeholder);
+                          }
+                        }}
+                      />
+                      {/* Fallback placeholder (hidden by default) */}
+                      <div className="profile-image-placeholder" style={{ display: 'none' }}>
+                        {patient.name ? patient.name.charAt(0).toUpperCase() : 'U'}
+                      </div>
+                    </>
                   ) : (
                     <div className="profile-image-placeholder">
                       {patient.name ? patient.name.charAt(0).toUpperCase() : 'U'}
@@ -404,7 +427,7 @@ const ClientProfile = () => {
                   disabled={saving}
                 />
                 <label htmlFor="profileImage" className={`upload-image-btn ${saving ? 'uploading' : ''}`} style={{ cursor: saving ? 'not-allowed' : 'pointer' }}>
-                  {saving ? '⏳ Saving...' : 'Upload Photo'}
+                  {saving ? ' Saving...' : 'Upload Photo'}
                 </label>
               </div>
 
@@ -437,13 +460,13 @@ const ClientProfile = () => {
             <button 
               className="edit-btn" 
               onClick={() => {
-                console.log('🔘 Edit button clicked, current edit state:', edit);
-                console.log('🔘 Setting edit to:', !edit);
+                console.log(' Edit button clicked, current edit state:', edit);
+                console.log(' Setting edit to:', !edit);
                 setEdit(!edit);
                 
                 // Force a re-render to ensure edit mode takes effect
                 setTimeout(() => {
-                  console.log('🔘 Edit state after timeout:', !edit);
+                  console.log(' Edit state after timeout:', !edit);
                 }, 100);
               }}
               style={{
@@ -456,14 +479,15 @@ const ClientProfile = () => {
                 fontSize: '14px',
                 fontWeight: 'bold',
                 boxShadow: edit ? '0 4px 8px rgba(220, 53, 69, 0.3)' : '0 4px 8px rgba(0, 123, 255, 0.3)',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s ease',
+                marginTop: '10px'
               }}
             >
               {edit ? "Cancel Edit" : " Edit Profile"}
             </button>
             
             {/* Continue button - always visible and next to Edit Profile */}
-            <button
+            {/* <button
               className="continue-btn"
               onClick={handleContinue}
               style={{
@@ -480,7 +504,7 @@ const ClientProfile = () => {
               }}
             >
               Continue
-            </button>
+            </button> */}
             
             {/* Save button - appears in edit mode */}
             {edit && (
@@ -524,7 +548,7 @@ const ClientProfile = () => {
               color: edit ? '#007bff' : '#333',
               transition: 'color 0.3s ease'
             }}>
-              Client Details {edit && '📝 (Edit Mode)'}
+              Client Details {edit && ' (Edit Mode)'}
             </h3>
             {edit && (
               <div style={{
@@ -537,7 +561,7 @@ const ClientProfile = () => {
                 animation: 'pulse 2s infinite',
                 border: '2px solid #004085'
               }}>
-                ✏️ You are editing your profile - Make changes and click "Save Changes"
+                 You are editing your profile - Make changes and click "Save Changes"
               </div>
             )}
           </div>

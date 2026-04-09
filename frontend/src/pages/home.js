@@ -35,8 +35,21 @@ const Home = () => {
     try {
       const response = await fetch(API.ALL_SERVICES);
       const data = await response.json();
+      console.log('Home page - Services data received:', data);
       if (response.ok) {
         setServices(data.services || []);
+        
+        // Debug: Check if services have icon_file
+        data.services.forEach((service, index) => {
+          console.log(`Home Service ${index}:`, {
+            id: service.id,
+            name: service.service_name,
+            icon: service.icon,
+            icon_file: service.icon_file
+          });
+        });
+      } else {
+        console.error('Failed to fetch services:', data.message);
       }
     } catch (error) {
       console.error("Error fetching services:", error);
@@ -88,6 +101,27 @@ const Home = () => {
     }
   };
 
+  const handleBookService = (service) => {
+    // Check if user is logged in and is a client (Patient/Client)
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+
+    if (!token) {
+      alert("Please login to book services");
+      navigate("/login");
+      return;
+    }
+
+    const isClient = role === "Patient" || role === "Client";
+    if (!isClient) {
+      alert("Only clients can book services");
+      return;
+    }
+
+    // Navigate to attorneys listing for the specific service
+    navigate(`/attorneys?service=${encodeURIComponent(service.service_name)}`);
+  };
+
   return (
     <>
       <Header />
@@ -133,6 +167,7 @@ const Home = () => {
           <button className="book-btn">Chat Now</button>
         </div>
       </div>
+
       {/* Dynamic Services */}
       <h2>Our Legal Services</h2>
       <div className="services">
@@ -140,16 +175,20 @@ const Home = () => {
           <div className="loading">Loading services...</div>
         ) : services.length > 0 ? (
           services.map((service) => (
-            <div key={service.id} className="service-card" onClick={() => navigate('/attorneys')}>
+            <div key={service.id} className="service-card" onClick={() => handleBookService(service)}>
               <div className="service-icon">
                 <ServiceIcon 
                   iconName={service.icon || 'Gavel'} 
+                  iconFile={service.icon_file}
                   size={48} 
                 />
               </div>
               <h3>{service.service_name}</h3>
               <p>{service.description || 'Professional legal service'}</p>
-              <button className="book-btn">Book Now</button>
+              <button className="book-btn" onClick={(e) => {
+                e.stopPropagation();
+                handleBookService(service);
+              }}>Book Now</button>
             </div>
           ))
         ) : (
@@ -158,7 +197,7 @@ const Home = () => {
           </div>
         )}
       </div>
-
+      
       {/* Client Success Stories */}
       <h2>Client Success Stories</h2>
       <div className="symptoms">

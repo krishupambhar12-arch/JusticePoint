@@ -319,9 +319,14 @@ const BookAppointment = () => {
                   <option value="">Select purpose</option>
                   <option value="consultation">Legal Consultation</option>
                   <option value="case_review">Case Review</option>
-                  <option value="documentation">Documentation</option>
+                  <option value="documentation">Documentation / Drafting</option>
                   <option value="representation">Legal Representation</option>
-                  <option value="mediation">Mediation</option>
+                  <option value="legal_advice">Legal Advice</option>
+                  <option value="Property">Property Dispute</option>
+                  <option value="Family">Family Matter</option>
+                  <option value="Criminal">Criminal Case Help</option>
+                  <option value="Business">Business / Corporate Matter</option>
+                  <option value="Tax">Tax Issue</option>
                   <option value="other">Other</option>
                 </select>
               </div>

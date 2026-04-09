@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "../styles/register.css";
+import "../styles/register-specific.css"; // Register specific CSS only
 import "../styles/variables.css";
 import { useNavigate, Link } from "react-router-dom";
 import { API } from "../config/api";

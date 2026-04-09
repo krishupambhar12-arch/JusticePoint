@@ -15,40 +15,38 @@
 .login-content-wrapper {
   display: flex;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1135px;
   gap: 0px;
   align-items: center;
 }
 
 /* Left Side Box - Same as Login */
 .login-left-box {
-  flex: 0 0 440px;
+  flex: 0 0 476px;
   background: linear-gradient(135deg, #5c4750 0%, #4a3a42 100%);
-  border-radius: 15px;
-  padding: 89px;
+  border-radius: 15px 0 0 15px;
+  padding: 50px 40px;
   color: white;
   position: relative;
   overflow: hidden;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-between;
   height: 100%;
-  min-height: 500px;
 }
 
 /* Right Side - Register Form */
 .register-form {
-  flex: 1;
+  flex: 0 0 476px;
   background: white;
-  padding: 120px;
-  border-radius: 15px;
+  padding: 109px 40px;
+  border-radius: 0 15px 15px 0;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   justify-content: center;
   height: 100%;
-  min-height: 500px;
 }
 
 .register-form h2 {
@@ -215,7 +213,7 @@
 
 /* Get Started and AC text styling */
 .register-form .get {
-  padding: 5px 14px;
+  padding: 42px 0px 0px 0px;
   border-radius: 12px;
   margin-bottom: -2px;
   font-size: 47px;

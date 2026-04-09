@@ -235,7 +235,7 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {appointments.length > 0 ? appointments.map(appointment => (
+                  {appointments.length > 0 ? appointments.slice(0, 5).map(appointment => (
                     <tr key={appointment.id}>
                       <td>{appointment.date || "N/A"}</td>
                       <td>{appointment.time || "N/A"}</td>

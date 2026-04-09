@@ -71,11 +71,11 @@ export const API = {
   // Public Services API
   ALL_SERVICES: `${BASE_URL}/services`,
   // Consultation APIs
-  CONSULTATION_ATTORNEYS: `${BASE_URL}/user/consultation/attorneys`,
-  CREATE_CONSULTATION: `${BASE_URL}/user/consultation`,
-  CLIENT_CONSULTATIONS: `${BASE_URL}/user/consultations`,
-  CONSULTATION_MESSAGES: `${BASE_URL}/user/consultation`,
-  SEND_CONSULTATION_MESSAGE: `${BASE_URL}/user/consultation`,
+  CONSULTATION_ATTORNEYS: `${BASE_URL}/consultation/attorneys`,
+  CREATE_CONSULTATION: `${BASE_URL}/consultation/create`,
+  CLIENT_CONSULTATIONS: `${BASE_URL}/consultation/my-consultations`,
+  CONSULTATION_MESSAGES: `${BASE_URL}/consultation`,
+  SEND_CONSULTATION_MESSAGE: `${BASE_URL}/consultation`,
   ATTORNEY_CONSULTATIONS: `${BASE_URL}/attorney/consultations`,
   ATTORNEY_CONSULTATION_MESSAGES: `${BASE_URL}/attorney/consultation`,
   ATTORNEY_SEND_CONSULTATION_MESSAGE: `${BASE_URL}/attorney/consultation`,

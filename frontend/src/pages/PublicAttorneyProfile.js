@@ -141,12 +141,12 @@ const PublicAttorneyProfile = () => {
             <h2>Contact Information</h2>
             <div className="contact-card">
               <div className="contact-item">
-                <h3>Email</h3>
+                <h3>Email :</h3>
                 <p>{attorney.email}</p>
               </div>
               {attorney.phone && (
                 <div className="contact-item">
-                  <h3>Phone</h3>
+                  <h3>Phone :</h3>
                   <p>{attorney.phone}</p>
                 </div>
               )}

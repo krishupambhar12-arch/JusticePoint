@@ -38,18 +38,23 @@ const AttorneyConsultation = () => {
 
   const fetchConsultations = async () => {
     try {
+      console.log("🔍 Fetching attorney consultations...");
       const res = await fetch(API.ATTORNEY_CONSULTATIONS, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
+      console.log("🔍 Consultations response:", data);
+      
       if (res.ok) {
         setConsultations(data.consultations || []);
         if (data.consultations && data.consultations.length > 0 && !selectedConsultation) {
           setSelectedConsultation(data.consultations[0]);
         }
+      } else {
+        console.error("❌ Failed to fetch consultations:", data.message);
       }
     } catch (error) {
-      console.error("Error fetching consultations:", error);
+      console.error("❌ Error fetching consultations:", error);
     } finally {
       setLoading(false);
     }
@@ -57,15 +62,20 @@ const AttorneyConsultation = () => {
 
   const fetchMessages = async (consultationId) => {
     try {
+      console.log("🔍 Fetching messages for consultation:", consultationId);
       const res = await fetch(`${API.ATTORNEY_CONSULTATION_MESSAGES}/${consultationId}/messages`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
+      console.log("🔍 Messages response:", data);
+      
       if (res.ok) {
         setMessages(data.messages || []);
+      } else {
+        console.error("❌ Failed to fetch messages:", data.message);
       }
     } catch (error) {
-      console.error("Error fetching messages:", error);
+      console.error("❌ Error fetching messages:", error);
     }
   };
 

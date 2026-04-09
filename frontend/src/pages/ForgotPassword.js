@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "../styles/login.css";
+import "../styles/forgot-specific.css"; // Forgot password specific CSS only
 import { API } from "../config/api";
 import { useNavigate, Link } from "react-router-dom";
 
@@ -170,10 +170,10 @@ const ForgotPassword = () => {
         </div>
 
         {/* Right Side - Forgot Password Form */}
-        <form className="register-form" onSubmit={handleSubmit}>
+        <form className="register-form-right" onSubmit={handleSubmit}>
           <h1 className="get">Reset Password</h1>
           <h4 className="ac">Enter your email and new password</h4>
-          <h2>Forgot Password</h2>
+          {/* <h2>Forgot Password</h2> */}
 
           {message && (
             <div className={`message ${message.includes('✅') ? 'success' : 'error'}`}>

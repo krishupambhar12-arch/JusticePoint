@@ -27,6 +27,11 @@ const CodeSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  specialization: {
+    type: String,
+    default: '',
+    trim: true
+  },
   joiningDate: {
     type: String,
     required: true

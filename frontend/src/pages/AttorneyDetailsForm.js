@@ -7,8 +7,23 @@ import { API } from "../config/api";
 const AttorneyDetailsForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const attorneyId = location.state?.attorneyId || "";  // Get attorneyId from registration
-  const attorneyName = location.state?.attorneyName || "";  // Get attorneyName from registration
+  // Get attorneyId from location state or localStorage fallback
+  const attorneyId = location.state?.attorneyId || localStorage.getItem('attorneyId') || "";  
+  const attorneyName = location.state?.attorneyName || localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user') || '{}').name : "";  
+
+  const specializations = [
+    'All',
+    'Civil Law',
+    'Corporate Law', 
+    'Family Law',
+    'Criminal Law',
+    'Real Estate Law',
+    'Tax Law',
+    'Immigration Law',
+    'Intellectual Property Law',
+    'Labor Law',
+    'Environmental Law'
+  ];
 
   const [formData, setFormData] = useState({
     attorneyId,
@@ -31,6 +46,13 @@ const AttorneyDetailsForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Check if attorneyId exists
+    if (!formData.attorneyId) {
+      alert("❌ Attorney ID not found. Please login again.");
+      navigate("/attorney-login");
+      return;
+    }
+
     const data = new FormData();
     for (let key in formData) {
       data.append(key, formData[key]);
@@ -46,14 +68,18 @@ const AttorneyDetailsForm = () => {
       if (res.ok) {
         alert("✅ Attorney details submitted successfully!");
         console.log(result);
-        navigate("/attorney/dashboard");
+        // Store updated attorney info in localStorage
+        if (result.attorney) {
+          localStorage.setItem('user', JSON.stringify(result.attorney));
+        }
+        navigate("/attorney/profile");
       } else {
         alert(result.message || "❌ Failed to submit details");
       }
     } catch (error) {
       console.error("❌ Error:", error);
-      alert("⚠️ Proceeding to dashboard...");
-      navigate("/attorney/dashboard");
+      alert("⚠️ Proceeding to profile...");
+      navigate("/attorney/profile");
     }
   };
 
@@ -64,7 +90,12 @@ const AttorneyDetailsForm = () => {
 
         <div className="form-group">
           <label>Specialization</label>
-          <input type="text" name="specialization" onChange={handleChange} required />
+          <select name="specialization" onChange={handleChange} required value={formData.specialization}>
+            <option value="">Select Specialization</option>
+            {specializations.map(spec => (
+              <option key={spec} value={spec}>{spec}</option>
+            ))}
+          </select>
         </div>
 
         <div className="form-group">

@@ -134,6 +134,50 @@ router.get("/dashboard", auth, async (req, res) => {
     const expiredAppointments = await Appointment.countDocuments({ isActive: true, status: "Expired" });
     const totalFeedback = await Feedback.countDocuments({ isActive: true });
 
+    // Get recent appointments (last 5)
+    let recentAppointments = [];
+    try {
+      recentAppointments = await Appointment.find({ isActive: true })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .populate('user_id', 'name email')
+        .populate('attorney_id', 'name email')
+        .lean();
+    } catch (populateError) {
+      console.error('Error populating appointments:', populateError);
+      // Fallback: get appointments without populate
+      recentAppointments = await Appointment.find({ isActive: true })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .lean();
+    }
+
+    // Transform appointments to match frontend expectations
+    const transformedAppointments = recentAppointments.map(apt => {
+      try {
+        return {
+          id: apt._id,
+          date: apt.date ? new Date(apt.date).toLocaleDateString() : 'N/A',
+          time: apt.time || 'N/A',
+          patient: (apt.user_id && apt.user_id.name) ? apt.user_id.name : apt.personalInfo?.name || 'Unknown',
+          doctor: (apt.attorney_id && apt.attorney_id.name) ? apt.attorney_id.name : apt.attorneyName || 'Unknown',
+          status: apt.status || 'Unknown',
+          createdAt: apt.createdAt
+        };
+      } catch (transformError) {
+        console.error('Error transforming appointment:', transformError);
+        return {
+          id: apt._id,
+          date: 'N/A',
+          time: 'N/A',
+          patient: 'Unknown',
+          doctor: 'Unknown',
+          status: 'Unknown',
+          createdAt: apt.createdAt
+        };
+      }
+    });
+
     res.json({
       totalUsers,
       totalAttorneys,
@@ -142,7 +186,8 @@ router.get("/dashboard", auth, async (req, res) => {
       confirmedAppointments,
       completedAppointments,
       expiredAppointments,
-      totalFeedback
+      totalFeedback,
+      recentAppointments: transformedAppointments
     });
   } catch (error) {
     console.error("Dashboard error:", error);
@@ -438,6 +483,7 @@ router.get("/codes", auth, async (req, res) => {
       phone: code.phone,
       gender: code.gender,
       qualification: code.qualification,
+      specialization: code.specialization,
       joiningDate: code.joiningDate,
       attorneyCode: code.attorneyCode,
       createdAt: code.createdAt,
@@ -467,6 +513,7 @@ router.get("/codes/deleted", auth, async (req, res) => {
       phone: code.phone,
       gender: code.gender,
       qualification: code.qualification,
+      specialization: code.specialization,
       joiningDate: code.joiningDate,
       attorneyCode: code.attorneyCode,
       deletedAt: code.deletedAt,
@@ -493,7 +540,7 @@ router.post("/codes", auth, async (req, res) => {
       return res.status(403).json({ message: "Only admins can create codes" });
     }
 
-    const { name, email, phone, gender, qualification, joiningDate, attorneyCode } = req.body;
+    const { name, email, phone, gender, qualification, specialization, joiningDate, attorneyCode } = req.body;
 
     // Check if attorney code already exists
     const existingCode = await Code.findOne({ attorneyCode });
@@ -508,6 +555,7 @@ router.post("/codes", auth, async (req, res) => {
       phone,
       gender,
       qualification,
+      specialization,
       joiningDate,
       attorneyCode
     });
@@ -523,6 +571,7 @@ router.post("/codes", auth, async (req, res) => {
         phone: newCode.phone,
         gender: newCode.gender,
         qualification: newCode.qualification,
+        specialization: newCode.specialization,
         joiningDate: newCode.joiningDate,
         attorneyCode: newCode.attorneyCode
       }
@@ -540,7 +589,7 @@ router.put("/codes/:id", auth, async (req, res) => {
       return res.status(403).json({ message: "Only admins can update codes" });
     }
 
-    const { name, email, phone, gender, qualification, joiningDate, attorneyCode } = req.body;
+    const { name, email, phone, gender, qualification, specialization, joiningDate, attorneyCode } = req.body;
     const codeId = req.params.id;
 
     const code = await Code.findById(codeId);
@@ -562,6 +611,7 @@ router.put("/codes/:id", auth, async (req, res) => {
     code.phone = phone;
     code.gender = gender;
     code.qualification = qualification;
+    code.specialization = specialization;
     code.joiningDate = joiningDate;
     code.attorneyCode = attorneyCode;
 
@@ -576,6 +626,7 @@ router.put("/codes/:id", auth, async (req, res) => {
         phone: code.phone,
         gender: code.gender,
         qualification: code.qualification,
+        specialization: code.specialization,
         joiningDate: code.joiningDate,
         attorneyCode: code.attorneyCode
       }
@@ -666,6 +717,36 @@ router.put("/codes/:id/restore", auth, async (req, res) => {
     });
   } catch (error) {
     console.error("Restore code error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET ALL DOCTORS/ATTORNEYS (from Attorney collection)
+router.get("/doctors", auth, async (req, res) => {
+  try {
+    if (req.userRole !== "Admin") {
+      return res.status(403).json({ message: "Only admins can access doctors" });
+    }
+
+    const attorneys = await Attorney.find({ isActive: true }).sort({ createdAt: -1 });
+    
+    const formattedAttorneys = attorneys.map(attorney => ({
+      id: attorney._id,
+      name: attorney.attorneyName,
+      email: attorney.attorneyEmail,
+      phone: attorney.attorneyPhone,
+      gender: attorney.attorneyGender,
+      qualification: attorney.qualification,
+      specialization: attorney.specialization,
+      joiningDate: attorney.createdAt,
+      attorneyCode: attorney.attorneyCode || 'N/A',
+      createdAt: attorney.createdAt,
+      updatedAt: attorney.updatedAt
+    }));
+
+    res.json({ doctors: formattedAttorneys });
+  } catch (error) {
+    console.error("Get doctors error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -1169,13 +1250,7 @@ router.get("/consultations", auth, async (req, res) => {
 
     const consultations = await Consultation.find({})
       .populate('patient_id', 'name email phone')
-      .populate({
-        path: 'doctor_id',
-        populate: {
-          path: 'userId',
-          select: 'name email specialization'
-        }
-      })
+      .populate('doctor_id', 'attorneyName attorneyEmail specialization')
       .sort({ updatedAt: -1 })
       .lean();
 
@@ -1189,8 +1264,8 @@ router.get("/consultations", auth, async (req, res) => {
       },
       attorney: {
         id: consultation.doctor_id?._id,
-        name: consultation.doctor_id?.userId?.name || "Unknown",
-        email: consultation.doctor_id?.userId?.email || "",
+        name: consultation.doctor_id?.attorneyName || "Unknown",
+        email: consultation.doctor_id?.attorneyEmail || "",
         specialization: consultation.doctor_id?.specialization || ""
       },
       status: consultation.status,
@@ -1268,11 +1343,17 @@ router.post("/consultations/:consultationId/reply", auth, async (req, res) => {
     }
 
     // Create message as Admin (sent as Attorney for consistency)
+    const consultationWithAttorney = await Consultation.findById(consultationId).populate('doctor_id', 'attorneyName');
+    if (!consultationWithAttorney) {
+      return res.status(404).json({ message: "Consultation not found" });
+    }
+
     const consultationMessage = new ConsultationMessage({
       consultation_id: consultationId,
       sender_id: req.userId, // Admin's user ID
       sender_role: 'Attorney',
-      message: `[Admin Reply] ${message.trim()}`
+      message: `[Admin Reply] ${message.trim()}`,
+      attorney_name: consultationWithAttorney.doctor_id.attorneyName || null
     });
 
     await consultationMessage.save();
@@ -1286,6 +1367,7 @@ router.post("/consultations/:consultationId/reply", auth, async (req, res) => {
         id: consultationMessage._id,
         message: consultationMessage.message,
         sender_role: consultationMessage.sender_role,
+        attorney_name: consultationMessage.attorney_name,
         createdAt: consultationMessage.createdAt
       }
     });

@@ -115,6 +115,17 @@ const AttorneySignup = () => {
 
         if (res.ok) {
           setMessage("✅ Registration successful! Redirecting to details form...");
+          
+          // Store token and user data in localStorage
+          if (data.token) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('role', 'Attorney');
+            localStorage.setItem('email', data.attorney?.email || data.user?.email || formData.email);
+            localStorage.setItem('attorneyId', data.attorney?.id || data.user?.id);
+            localStorage.setItem('user', JSON.stringify(data.attorney || data.user));
+            console.log("🔍 Stored token and user data in localStorage");
+          }
+          
           setTimeout(() => {
             // Navigate to AttorneyDetailsForm.js with attorney data
             navigate("/attorney/details", { 
