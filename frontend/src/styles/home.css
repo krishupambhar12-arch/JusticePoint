@@ -121,7 +121,7 @@ h2 {
   margin: 3rem 0 2.5rem 0;    /* top margin increased to 5rem, bottom 2.5rem */
   font-size: 2rem;            /* readable & prominent */
   font-weight: 700;           /* bold but clean */
-  color: white;
+  color: rgb(58, 56, 56);
   text-align: center;         /* centered */
   letter-spacing: 1px;
   position: relative;

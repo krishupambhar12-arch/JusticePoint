@@ -92,3 +92,35 @@ nav a:hover {
 .dashboard-btn:hover {
   color: var(--color-soft-purple);
 }
+
+/* Profile icon */
+.profile-icon {
+  font-size: 28px;
+  color: #E6DDD0;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.profile-icon:hover {
+  color: var(--color-soft-purple);
+}
+
+/* Logout button */
+.logout-btn {
+  padding: 6px 12px;
+  border: 1px solid #E6DDD0;
+  border-radius: 6px;
+  background: transparent;
+  color: #E6DDD0;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.logout-btn:hover {
+  background: var(--color-soft-purple);
+  color: white;
+  border-color: var(--color-soft-purple);
+}

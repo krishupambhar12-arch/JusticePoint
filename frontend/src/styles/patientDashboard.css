@@ -306,27 +306,27 @@
 }
 
 .status-pending {
-  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+  /* background: linear-gradient(135deg, #fff3cd, #ffeaa7); */
   color: #856404;
-  border: 1px solid rgba(133, 100, 4, 0.2);
+  /* border: 1px solid rgba(133, 100, 4, 0.2); */
 }
 
 .status-confirmed {
-  background: linear-gradient(135deg, #d1ecf1, #74b9ff);
+  /* background: linear-gradient(135deg, #d1ecf1, #74b9ff); */
   color: #0c5460;
-  border: 1px solid rgba(12, 84, 96, 0.2);
+  /* border: 1px solid rgba(12, 84, 96, 0.2); */
 }
 
 .status-completed {
-  background: linear-gradient(135deg, #d4edda, #55efc4);
+  /* background: linear-gradient(135deg, #d4edda, #55efc4); */
   color: #155724;
-  border: 1px solid rgba(21, 87, 36, 0.2);
+  /* border: 1px solid rgba(21, 87, 36, 0.2); */
 }
 
 .status-cancelled {
-  background: linear-gradient(135deg, #f8d7da, #ff7675);
+  /* background: linear-gradient(135deg, #f8d7da, #ff7675); */
   color: #721c24;
-  border: 1px solid rgba(114, 28, 36, 0.2);
+  /* border: 1px solid rgba(114, 28, 36, 0.2); */
 }
 
 .appointment-fees {

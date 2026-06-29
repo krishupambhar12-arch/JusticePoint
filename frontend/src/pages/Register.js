@@ -38,7 +38,7 @@ const Register = () => {
       switch(provider) {
         case 'google':
           authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-            `client_id=714671509629-2ue74rqbh90ngtjtfi8aspa740tlid27.apps.googleusercontent.com&` +
+            `client_id=${process.env.REACT_APP_GOOGLE_CLIENT_ID}&` +
             `redirect_uri=${encodeURIComponent('http://localhost:3000/user')}&` +
             `response_type=code&` +
             `scope=${encodeURIComponent('https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid')}&` +
@@ -48,13 +48,13 @@ const Register = () => {
           break;
         case 'facebook':
           authUrl = `https://www.facebook.com/v18.0/dialog/oauth?` +
-            `client_id=1714010942910521&` +
+            `client_id=${process.env.REACT_APP_FACEBOOK_APP_ID}&` +
             `redirect_uri=${encodeURIComponent(window.location.origin + '/auth/facebook/callback')}&` +
             `scope=email,public_profile`;
           break;
         case 'linkedin':
           authUrl = `https://www.linkedin.com/oauth/v2/authorization?` +
-            `client_id=865holnprw1p7h&` +
+            `client_id=${process.env.REACT_APP_LINKEDIN_CLIENT_ID}&` +
             `redirect_uri=${encodeURIComponent(window.location.origin + '/auth/linkedin/callback')}&` +
             `response_type=code&` +
             `scope=openid profile email`;

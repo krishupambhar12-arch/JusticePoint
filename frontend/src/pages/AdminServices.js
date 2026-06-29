@@ -8,6 +8,8 @@ const AdminServices = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [serviceSearch, setServiceSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
   const [refreshIcons, setRefreshIcons] = useState(false);
@@ -63,6 +65,32 @@ const AdminServices = () => {
     }
     setLoading(false);
   }, [token]);
+
+  // Filter services based on search and category
+  const filteredServices = React.useMemo(() => {
+    return services.filter(service => {
+      const serviceName = (service.service_name || '').toLowerCase();
+      const serviceDescription = (service.description || '').toLowerCase();
+      const serviceCategory = (service.category || '').toLowerCase();
+      const searchTerm = (serviceSearch || '').toLowerCase();
+      
+      const matchesSearch = !serviceSearch || 
+        serviceName.includes(searchTerm) ||
+        serviceDescription.includes(searchTerm) ||
+        serviceCategory.includes(searchTerm);
+      
+      const matchesCategory = selectedCategory === 'all' || 
+        (service.category && service.category === selectedCategory);
+      
+      return matchesSearch && matchesCategory;
+    });
+  }, [services, serviceSearch, selectedCategory]);
+
+  console.log("🔍 AdminServices Debug:");
+  console.log("  - Total services:", services.length);
+  console.log("  - Service search:", serviceSearch);
+  console.log("  - Selected category:", selectedCategory);
+  console.log("  - Filtered services:", filteredServices.length);
 
   const validateForm = () => {
     const errors = {};
@@ -287,8 +315,42 @@ const AdminServices = () => {
               + Add Service
             </button>
           </div>
+          
+          {/* Service Search and Filter Section */}
+          <div className="service-search-section">
+            <h3>Search & Filter Services</h3>
+            <div className="search-filter-container">
+              <div className="search-box">
+                <input
+                  type="text"
+                  placeholder="Search services by name, description, or category..."
+                  value={serviceSearch}
+                  onChange={(e) => setServiceSearch(e.target.value)}
+                  className="search-input"
+                />
+                <button className="search-btn">Search</button>
+              </div>
+              
+              <div className="filter-box">
+                <label htmlFor="category-filter">Filter by Category:</label>
+                <select
+                  id="category-filter"
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="category-select"
+                >
+                  <option value="all">All Categories</option>
+                  <option value="Legal Service">Legal Service</option>
+                  <option value="Consultation">Consultation</option>
+                  <option value="Document Review">Document Review</option>
+                  <option value="Court Representation">Court Representation</option>
+                  <option value="Legal Advice">Legal Advice</option>
+                </select>
+              </div>
+            </div>
+          </div>
 
-          {services && services.length > 0 ? (
+          {filteredServices && filteredServices.length > 0 ? (
             <div className="services-table">
               <table>
                 <thead>
@@ -301,7 +363,7 @@ const AdminServices = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {services.map(service => (
+                  {filteredServices.map(service => (
                     <tr key={service.id}>
                       <td>
                         <ServiceIcon 
@@ -339,7 +401,11 @@ const AdminServices = () => {
           ) : (
             !loading && (
               <div className="no-data">
-                <p>No services found. Click "Add Service" to create one.</p>
+                <p>
+                  {serviceSearch || selectedCategory !== 'all' 
+                    ? 'No services found matching your search criteria' 
+                    : 'No services found. Click "Add Service" to create one.'}
+                </p>
               </div>
             )
           )}

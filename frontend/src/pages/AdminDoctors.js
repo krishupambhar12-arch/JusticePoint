@@ -8,6 +8,8 @@ const AdminDoctors = () => {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [doctorSearch, setDoctorSearch] = useState('');
+  const [selectedSpecialty, setSelectedSpecialty] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showAllDetailsModal, setShowAllDetailsModal] = useState(false);
@@ -40,7 +42,9 @@ const AdminDoctors = () => {
     'Immigration Law',
     'Intellectual Property Law',
     'Labor Law',
-    'Environmental Law'
+    'Environmental Law',
+    'Administrative Law',
+    'Cyber Security Law'
   ];
 
   const token = localStorage.getItem('token');
@@ -137,6 +141,32 @@ const AdminDoctors = () => {
     }
     setLoading(false);
   }, [token, role]);
+
+  // Filter doctors based on search and specialty - recalculate when dependencies change
+  const filteredDoctors = React.useMemo(() => {
+    return doctors.filter(doctor => {
+      const doctorName = (doctor.name || '').toLowerCase();
+      const doctorEmail = (doctor.email || '').toLowerCase();
+      const doctorSpecialization = (doctor.specialization || '').toLowerCase();
+      const searchTerm = (doctorSearch || '').toLowerCase();
+      
+      const matchesSearch = !doctorSearch || 
+        doctorName.includes(searchTerm) ||
+        doctorEmail.includes(searchTerm) ||
+        doctorSpecialization.includes(searchTerm);
+      
+      const matchesSpecialty = selectedSpecialty === 'all' || 
+        (doctor.specialization && doctor.specialization === selectedSpecialty);
+      
+      return matchesSearch && matchesSpecialty;
+    });
+  }, [doctors, doctorSearch, selectedSpecialty]);
+
+  console.log("🔍 AdminDoctors Debug:");
+  console.log("  - Total doctors:", doctors.length);
+  console.log("  - Doctor search:", doctorSearch);
+  console.log("  - Selected specialty:", selectedSpecialty);
+  console.log("  - Filtered doctors:", filteredDoctors.length);
 
   const validateForm = () => {
     const errors = {};
@@ -470,6 +500,47 @@ const AdminDoctors = () => {
               + Add Attorney
             </button>
           </div>
+          
+          {/* Attorney Search and Filter Section */}
+          <div className="attorney-search-section">
+            <h3>Search & Filter Attorneys</h3>
+            <div className="search-filter-container">
+              <div className="search-box">
+                <input
+                  type="text"
+                  placeholder="Search attorneys by name, specialization, or email..."
+                  value={doctorSearch}
+                  onChange={(e) => setDoctorSearch(e.target.value)}
+                  className="search-input"
+                />
+                <button className="search-btn">Search</button>
+              </div>
+              
+              <div className="filter-box">
+                <label htmlFor="specialty-filter">Filter by Speciality:</label>
+                <select
+                  id="specialty-filter"
+                  value={selectedSpecialty}
+                  onChange={(e) => setSelectedSpecialty(e.target.value)}
+                  className="specialty-select"
+                >
+                  <option value="all">All Specialities</option>
+                  <option value="Family Law">Family Law</option>
+                  <option value="Corporate Law">Corporate Law</option>
+                  <option value="Criminal Law">Criminal Law</option>
+                  <option value="Civil Law">Civil Law</option>
+                  <option value="Real Estate Law">Real Estate Law</option>
+                  <option value="Tax Law">Tax Law</option>
+                  <option value="Immigration Law">Immigration Law</option>
+                  <option value="Intellectual Property Law">Intellectual Property Law</option>
+                  <option value="Labor Law">Labor Law</option>
+                  <option value="Environmental Law">Environmental Law</option>
+                  <option value="Administrative Law">Administrative Law</option>
+                  <option value="Cyber Security Law">Cyber Security Law</option>
+                </select>
+              </div>
+            </div>
+          </div>
 
           {doctors && doctors.length > 0 ? (
             <div className="doctors-table">
@@ -488,7 +559,7 @@ const AdminDoctors = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {doctors.map(doctor => (
+                  {filteredDoctors.map(doctor => (
                     <tr key={doctor.id}>
                       <td>{doctor.name}</td>
                       <td>{doctor.email}</td>
@@ -758,13 +829,7 @@ const AdminDoctors = () => {
                 >
                   Close
                 </button>
-                <button
-                  type="button"
-                  onClick={handleShowAllDetails}
-                  className="btn btn-all-details"
-                >
-                  All Detail
-                </button>
+              
               </div>
             </div>
           </div>

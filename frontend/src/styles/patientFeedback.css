@@ -87,7 +87,12 @@
 
 .form-group {
   margin-bottom: 20px;
+  
 }
+
+.feedback-form-card .form-group label {
+  color: black !important;
+} 
 
 .form-group label {
   display: block;
@@ -231,12 +236,13 @@
 }
 
 .status-badge {
-  padding: 6px 12px;
-  border-radius: 20px;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
+  padding: 6px 0px 0px -17px;
+    border-radius: 20px;
+    color: #0d0c0c;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+
 }
 
 .feedback-date {

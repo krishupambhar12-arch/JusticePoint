@@ -7,9 +7,24 @@ const ClientSidebar = () => {
 
   const handleLogout = () => {
     if (window.confirm("Are you sure you want to logout?")) {
+      // Clear all authentication and user data
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      localStorage.removeItem("role");
+      localStorage.removeItem("email");
+      localStorage.removeItem("name");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("attorneyId");
+      localStorage.removeItem("attorneyData");
+      localStorage.removeItem("adminEmail");
+      localStorage.removeItem("adminName");
+      localStorage.removeItem("redirectAfterLogin");
+      
+      // Navigate to home page
       navigate("/");
+      
+      // Force page refresh to clear any remaining state
+      window.location.reload();
     }
   };
 

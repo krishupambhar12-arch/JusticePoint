@@ -346,18 +346,63 @@ router.put("/profile", auth, upload.single("profile_pic"), async (req, res) => {
 // GET /attorney/dashboard  -> Attorney + today's appointments count
 router.get("/dashboard", auth, async (req, res) => {
   try {
-    console.log("🔍 Dashboard request - userId:", req.userId);
-    console.log("🔍 Dashboard request - userRole:", req.userRole);
+    console.log("Dashboard request - userId:", req.userId);
+    console.log("Dashboard request - userRole:", req.userRole);
     
     // Attorney profile (direct lookup by attorney ID)
     const attorney = await Attorney.findById(req.userId).lean();
-    console.log("🔍 Attorney found:", attorney ? "Yes" : "No");
+    console.log("Attorney found:", attorney ? "Yes" : "No");
+    console.log("Attorney ID:", attorney?._id);
+    console.log("Attorney Name:", attorney?.attorneyName);
     console.log("🔍 Attorney data:", attorney);
     
     if (!attorney) {
       console.log("❌ Attorney not found for ID:", req.userId);
       return res.status(404).json({ message: "Attorney profile not found" });
     }
+
+    // Use the same logic as the appointments fetching endpoint
+    let attorneyId = req.userId;
+    let codeAttorneyId = null;
+    
+    // Always try to find the corresponding Code record based on email
+    const Code = require("../models/Code");
+    if (attorney && attorney.attorneyEmail) {
+      console.log("Dashboard - Attorney found in Attorney model, looking for corresponding Code record...");
+      const codeAttorney = await Code.findOne({ email: attorney.attorneyEmail });
+      
+      if (codeAttorney) {
+        console.log("Dashboard - Corresponding Code record found:", codeAttorney.name);
+        codeAttorneyId = codeAttorney._id;
+      } else {
+        console.log("Dashboard - No corresponding Code record found for email:", attorney.attorneyEmail);
+      }
+    }
+    
+    // If not found in Attorney model, check Code model directly
+    if (!attorney) {
+      console.log("Dashboard - Attorney not found in Attorney model, checking Code model...");
+      const codeAttorney = await Code.findById(req.userId);
+      
+      if (codeAttorney) {
+        console.log("Dashboard - Attorney found in Code model:", codeAttorney.name);
+        attorney = codeAttorney;
+        attorneyId = codeAttorney._id;
+        codeAttorneyId = codeAttorney._id;
+      }
+    }
+
+    // Build the same search criteria as used in appointments fetching
+    let attorneyIds = [];
+    
+    if (attorneyId) {
+      attorneyIds.push(attorneyId);
+    }
+    if (codeAttorneyId) {
+      attorneyIds.push(codeAttorneyId);
+    }
+
+    console.log("Dashboard - Attorney IDs to check:", attorneyIds);
 
     // Stats (0 if Appointment model not present)
     let todayCount = 0;
@@ -368,32 +413,76 @@ router.get("/dashboard", auth, async (req, res) => {
     const start = new Date(); start.setHours(0,0,0,0);
     const end = new Date();   end.setHours(23,59,59,999);
 
+    // Build search criteria for both doctor_id and attorney_id
+    let searchCriteria = {};
+    if (attorneyIds.length > 0) {
+      searchCriteria.$or = [
+        { doctor_id: { $in: attorneyIds } },
+        { attorney_id: { $in: attorneyIds } }
+      ];
+    }
+
+    console.log("Dashboard - Search criteria:", JSON.stringify(searchCriteria, null, 2));
+
     // today count
-    todayCount = await Appointment.countDocuments({
-      doctor_id: attorney._id,
+    const todayCriteria = {
+      ...searchCriteria,
       date: { $gte: start, $lte: end },
       status: { $ne: "Cancelled" }
-    });
+    };
+    todayCount = await Appointment.countDocuments(todayCriteria);
 
     // total unique clients seen by this attorney
-    const uniqueClients = await Appointment.distinct("user_id", { doctor_id: attorney._id });
-    totalClients = uniqueClients.length;
+    const appointments = await Appointment.find(searchCriteria).select('personalInfo').lean();
+    const uniqueClients = new Set();
+    
+    appointments.forEach(appointment => {
+      // Count unique clients by email from personalInfo
+      if (appointment.personalInfo?.email) {
+        uniqueClients.add(appointment.personalInfo.email);
+      }
+      // Also count by name if email not available
+      else if (appointment.personalInfo?.name) {
+        uniqueClients.add(appointment.personalInfo.name);
+      }
+    });
+    
+    totalClients = uniqueClients.size;
+    console.log("Dashboard - Total appointments found:", appointments.length);
+    console.log("Dashboard - Unique clients found:", Array.from(uniqueClients));
+    console.log("Dashboard - Total unique clients count:", totalClients);
 
     // upcoming appointments from now (status pending/confirmed)
-    upcomingAppointments = await Appointment.countDocuments({
-      doctor_id: attorney._id,
+    const upcomingCriteria = {
+      ...searchCriteria,
       date: { $gte: new Date() },
       status: { $in: ["Pending", "Confirmed"] }
-    });
+    };
+    upcomingAppointments = await Appointment.countDocuments(upcomingCriteria);
 
-    // simple earnings estimate = total completed appointments * fees
-    const completedCount = await Appointment.countDocuments({
-      doctor_id: attorney._id,
-      status: { $in: ["Completed", "Done", "Approved"] }
-    });
-    earnings = completedCount * (attorney.fees || 0);
+    console.log("Appointment counts for attorney", attorney.attorneyName);
+    console.log("  - Today's appointments:", todayCount);
+    console.log("  - Total unique clients:", totalClients);
+    console.log("  - Upcoming appointments:", upcomingAppointments);
 
-    res.json({
+    // Calculate actual earnings from completed appointments using stored fees
+    const completedCriteria = {
+      ...searchCriteria,
+      status: "Completed"  // Only count appointments with "Completed" status
+    };
+    const completedAppointments = await Appointment.find(completedCriteria);
+    
+    earnings = completedAppointments.reduce((total, appointment) => {
+      return total + (appointment.attorneyFees || 0);
+    }, 0);
+    
+    console.log("Attorney earnings calculation (Completed status only):");
+    
+    console.log("  - Completed appointments:", completedAppointments.length);
+    console.log("  - Individual fees:", completedAppointments.map(a => a.attorneyFees));
+    console.log("  - Total earnings:", earnings);
+
+    const responseData = {
       attorney: {
         id: attorney._id,
         name: attorney.attorneyName,
@@ -414,8 +503,12 @@ router.get("/dashboard", auth, async (req, res) => {
         upcomingAppointments,
         earnings
       }
-    });
-    console.log("🔍 Dashboard response - profile picture:", attorney.profilePicture);
+    };
+
+    console.log("Final dashboard response:", responseData);
+    console.log("Dashboard response - profile picture:", attorney.profilePicture);
+    
+    res.json(responseData);
   } catch (e) {
     console.error("Dashboard error:", e);
     res.status(500).json({ message: "Server error" });
@@ -1203,8 +1296,70 @@ router.delete("/appointments/:appointmentId", auth, async (req, res) => {
       return res.status(404).json({ message: "Appointment not found" });
     }
 
-    // Verify that this appointment belongs to the attorney
-    if (appointment.doctor_id.toString() !== req.user.id && appointment.attorney_id.toString() !== req.user.id) {
+    // Check if this appointment belongs to this attorney
+    // Use the same logic as the appointments fetching endpoint
+    let attorney = await Attorney.findById(req.userId).lean();
+    let attorneyId = req.userId;
+    let codeAttorneyId = null;
+    
+    // Always try to find the corresponding Code record based on email
+    const Code = require("../models/Code");
+    if (attorney && attorney.attorneyEmail) {
+      console.log("🔍 Attorney found in Attorney model, looking for corresponding Code record...");
+      const codeAttorney = await Code.findOne({ email: attorney.attorneyEmail });
+      
+      if (codeAttorney) {
+        console.log("✅ Corresponding Code record found:", codeAttorney.name);
+        codeAttorneyId = codeAttorney._id;
+      } else {
+        console.log("⚠️ No corresponding Code record found for email:", attorney.attorneyEmail);
+      }
+    }
+    
+    // If not found in Attorney model, check Code model directly
+    if (!attorney) {
+      console.log("🔍 Attorney not found in Attorney model, checking Code model...");
+      const codeAttorney = await Code.findById(req.userId);
+      
+      if (codeAttorney) {
+        console.log("✅ Attorney found in Code model:", codeAttorney.name);
+        attorney = codeAttorney;
+        attorneyId = codeAttorney._id;
+        codeAttorneyId = codeAttorney._id;
+      }
+    }
+
+    if (!attorney) {
+      return res.status(404).json({ message: "Attorney not found" });
+    }
+
+    // Build the same search criteria as used in appointments fetching
+    let attorneyIds = [];
+    
+    if (attorneyId) {
+      attorneyIds.push(attorneyId);
+    }
+    if (codeAttorneyId) {
+      attorneyIds.push(codeAttorneyId);
+    }
+    
+    // Check both doctor_id and attorney_id fields against all possible attorney IDs
+    const isDoctorAppointment = appointment.doctor_id && attorneyIds.some(id => 
+      appointment.doctor_id.toString() === id.toString()
+    );
+    const isAttorneyAppointment = appointment.attorney_id && attorneyIds.some(id => 
+      appointment.attorney_id.toString() === id.toString()
+    );
+    
+    console.log("🔍 Attorney IDs to check:", attorneyIds);
+    console.log("🔍 isDoctorAppointment:", isDoctorAppointment);
+    console.log("🔍 isAttorneyAppointment:", isAttorneyAppointment);
+    
+    if (!isDoctorAppointment && !isAttorneyAppointment) {
+      console.log("❌ Unauthorized: Appointment does not belong to this attorney");
+      console.log("❌ Attorney IDs:", attorneyIds);
+      console.log("❌ Appointment doctor_id:", appointment.doctor_id);
+      console.log("❌ Appointment attorney_id:", appointment.attorney_id);
       return res.status(403).json({ message: "You can only delete your own appointments" });
     }
 
@@ -1226,6 +1381,77 @@ router.delete("/appointments/:appointmentId", auth, async (req, res) => {
   } catch (error) {
     console.error("Attorney delete appointment error:", error);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ===== DEBUG: Check Attorney Appointments =====
+router.get("/debug-attorney-appointments/:attorneyId", async (req, res) => {
+  try {
+    const { attorneyId } = req.params;
+    console.log("Debug: Checking appointments for attorney:", attorneyId);
+    
+    const Appointment = require("../models/Appointment");
+    const appointments = await Appointment.find({ doctor_id: attorneyId }).lean();
+    
+    console.log("Total appointments for this attorney:", appointments.length);
+    
+    // Today's appointments
+    const today = new Date();
+    const startOfDay = new Date(today);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(today);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    const todayAppointments = appointments.filter(apt => {
+      const aptDate = new Date(apt.date);
+      return aptDate >= startOfDay && aptDate <= endOfDay && apt.status !== "Cancelled";
+    });
+    
+    // Completed appointments
+    const completedAppointments = appointments.filter(apt => 
+      ["Completed", "Done", "Approved"].includes(apt.status)
+    );
+    
+    // Upcoming appointments
+    const upcomingAppointments = appointments.filter(apt => 
+      new Date(apt.date) >= today && ["Pending", "Confirmed"].includes(apt.status)
+    );
+    
+    // Unique clients
+    const uniqueClients = [...new Set(appointments.map(apt => apt.user_id))];
+    
+    // Total earnings
+    const earnings = completedAppointments.reduce((total, apt) => 
+      total + (apt.attorneyFees || 0), 0
+    );
+    
+    console.log("Stats for attorney", attorneyId);
+    console.log("  - Today's appointments:", todayAppointments.length);
+    console.log("  - Total unique clients:", uniqueClients.length);
+    console.log("  - Upcoming appointments:", upcomingAppointments.length);
+    console.log("  - Completed appointments:", completedAppointments.length);
+    console.log("  - Total earnings:", earnings);
+    
+    res.json({
+      attorneyId,
+      totalAppointments: appointments.length,
+      todayAppointments: todayAppointments.length,
+      totalClients: uniqueClients.length,
+      upcomingAppointments: upcomingAppointments.length,
+      completedAppointments: completedAppointments.length,
+      earnings,
+      appointments: appointments.map(apt => ({
+        id: apt._id,
+        date: apt.date,
+        time: apt.time,
+        subject: apt.subject,
+        status: apt.status,
+        attorneyFees: apt.attorneyFees
+      }))
+    });
+  } catch (error) {
+    console.error("Debug attorney error:", error);
+    res.status(500).json({ message: "Debug attorney error" });
   }
 });
 

@@ -143,13 +143,13 @@ const AdminDashboard = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Pending': return '#ffc107';
-      case 'Confirmed': return '#28a745';
-      case 'Completed': return '#007bff';
-      case 'Cancelled': return '#dc3545';
-      case 'Rejected': return '#6c757d';
-      case 'Expired': return '#6c757d';
-      default: return '#6c757d';
+      case 'Pending': ;
+      case 'Confirmed': ;
+      case 'Completed':;
+      case 'Cancelled': ;
+      case 'Rejected': ;
+      case 'Expired': ;
+      default: return ;
     }
   };
 

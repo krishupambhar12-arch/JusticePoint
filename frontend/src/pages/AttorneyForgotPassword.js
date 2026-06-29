@@ -73,7 +73,15 @@ const AttorneyForgotPassword = () => {
   };
 
   return (
-    <div className="admin-login-container">
+    <div 
+      className="admin-login-container"
+      style={{
+        backgroundImage: `url('/images/about/bg7.jpg')`,
+        backgroundPosition: 'center center',
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
       <div className="admin-login-card">
         <div className="admin-login-header">
           <h2>Attorney Forgot Password</h2>

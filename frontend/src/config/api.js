@@ -18,6 +18,7 @@ export const API = {
   // Client APIs
   CLIENT_DASHBOARD: `${BASE_URL}/user/dashboard`,
   CLIENT_APPOINTMENTS: `${BASE_URL}/user/appointments`,
+  CLIENT_APPOINTMENTS_CHECK_AVAILABILITY: `${BASE_URL}/user/check-availability`,
   CLIENT_PROFILE: `${BASE_URL}/user/profile`,
   CLIENT_PROFILE_UPDATE: `${BASE_URL}/user/profile`,
   // Feedback APIs

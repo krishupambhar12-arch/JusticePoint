@@ -9,7 +9,7 @@
 }
 
 .admin-login-card {
-  background: white;
+
   border-radius: 12px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   overflow: hidden;
@@ -166,10 +166,11 @@
 }
 
 .register-link {
-  padding: 20px 30px;
+  padding: 12px 30px;
   text-align: center;
   background: #f8f9fa;
   font-size: 14px;
+  border-radius: 10px;
 }
 
 .register-link a {

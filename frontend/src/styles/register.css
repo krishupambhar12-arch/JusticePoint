@@ -85,6 +85,11 @@
   height: 20px;
 }
 
+
+.register-form .form-group label{
+  color: black !important;
+}
+
 .login-left-box::before {
   content: '';
   position: absolute;

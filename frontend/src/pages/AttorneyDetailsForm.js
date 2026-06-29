@@ -12,8 +12,7 @@ const AttorneyDetailsForm = () => {
   const attorneyName = location.state?.attorneyName || localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user') || '{}').name : "";  
 
   const specializations = [
-    'All',
-    'Civil Law',
+     'Civil Law',
     'Corporate Law', 
     'Family Law',
     'Criminal Law',
@@ -22,7 +21,9 @@ const AttorneyDetailsForm = () => {
     'Immigration Law',
     'Intellectual Property Law',
     'Labor Law',
-    'Environmental Law'
+    'Environmental Law',
+    'Administrative Law',
+    'Cyber Security Law'
   ];
 
   const [formData, setFormData] = useState({

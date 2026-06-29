@@ -682,7 +682,7 @@ const AttorneyProfile = () => {
                       className="input-custom"
                     />
                   ) : (
-                    <span className="value-custom">{attorney.fees ? `$${attorney.fees}` : "Not provided"}</span>
+                    <span className="value-custom">{attorney.fees ? `₹${attorney.fees}` : "Not provided"}</span>
                   )}
                 </div>
               </div>

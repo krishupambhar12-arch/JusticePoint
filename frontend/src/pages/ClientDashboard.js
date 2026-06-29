@@ -70,8 +70,17 @@ const ClientDashboard = () => {
     };
 
     fetchDashboard();
+    
+    // Auto refresh bills every 30 seconds
+    const interval = setInterval(() => {
+      console.log("Refreshing client dashboard data...");
+      fetchDashboard();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
+  
   return (
     <div className="patient-dashboard-page">
       <ClientSidebar />
@@ -109,7 +118,7 @@ const ClientDashboard = () => {
           </div>
           <div className="patient-card">
             <h2>Total Bills</h2>
-            <p>₹{totalBills.toLocaleString()}</p>
+            <p>Rs{totalBills.toLocaleString()}</p>
           </div>
         </div>
 

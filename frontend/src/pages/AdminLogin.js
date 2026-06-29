@@ -46,7 +46,15 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="admin-login-container">
+    <div 
+      className="admin-login-container"
+      style={{
+        backgroundImage: `url('/images/about/bg2.avif')`,
+        backgroundPosition: 'center center',
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
       <div className="admin-login-card">
         <div className="admin-login-header">
           <h2>Admin Login</h2>

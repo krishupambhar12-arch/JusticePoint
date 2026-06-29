@@ -25,8 +25,27 @@ const BookAppointment = () => {
     time: ""
   });
   const [message, setMessage] = useState("");
+  const [existingAppointments, setExistingAppointments] = useState([]);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [holidayMessage, setHolidayMessage] = useState("");
 
   const BACKEND_URL = "http://localhost:5000";
+
+  // Function to check if selected date is Sunday
+  const checkIfSunday = (dateString) => {
+    if (!dateString) return false;
+    
+    const date = new Date(dateString);
+    const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    
+    if (dayOfWeek === 0) {
+      setHolidayMessage("Sunday is a holiday. Appointments cannot be booked on Sundays. Please select another day.");
+      return true;
+    } else {
+      setHolidayMessage("");
+      return false;
+    }
+  };
 
   const fetchDoctorDetails = useCallback(async () => {
     try {
@@ -70,6 +89,49 @@ const BookAppointment = () => {
     fetchDoctorDetails();
   }, [fetchDoctorDetails]);
 
+  // Check existing appointments when date/time changes
+  const checkExistingAppointments = useCallback(async (selectedDate, selectedTime) => {
+    if (!selectedDate || !selectedTime || !attorneyId) return;
+    
+    setCheckingAvailability(true);
+    setMessage("Checking availability...");
+    
+    try {
+      const token = localStorage.getItem("token");
+      // Use dedicated availability check endpoint
+      const res = await fetch(`${API.CLIENT_APPOINTMENTS_CHECK_AVAILABILITY}?doctor_id=${attorneyId}&date=${selectedDate}&time=${selectedTime}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      const data = await res.json();
+      
+      // Check for 401 Unauthorized - invalid or expired token
+      if (res.status === 401) {
+        setMessage("Session expired. Please login again.");
+        setTimeout(() => {
+          localStorage.removeItem("token");
+          localStorage.removeItem("role");
+          navigate("/login");
+        }, 2000);
+        return;
+      }
+      
+      if (!res.ok) throw new Error(data.message || "Failed to check availability");
+      
+      if (data.isAvailable) {
+        setMessage("✅ This time slot is available!");
+      } else {
+        setMessage("⚠️ Attorney already has an appointment at this date and time. Please choose a different time.");
+      }
+      
+    } catch (error) {
+      console.error("Error checking appointments:", error);
+      setMessage("Failed to check availability");
+    } finally {
+      setCheckingAvailability(false);
+    }
+  }, [attorneyId]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
@@ -84,10 +146,27 @@ const BookAppointment = () => {
         }
       });
     } else {
-      setFormData({
-        ...formData,
-        [name]: value
-      });
+      setFormData({ ...formData, [name]: value });
+      
+      // Check if selected date is Sunday
+      if (name === 'date') {
+        const isSunday = checkIfSunday(value);
+        if (isSunday) {
+          // Don't proceed with availability check if it's Sunday
+          return;
+        }
+      }
+      
+      // Check availability when date or time changes
+      if (name === 'date' || name === 'time') {
+        const otherField = name === 'date' ? formData.time : formData.date;
+        if (value && otherField) {
+          checkExistingAppointments(
+            name === 'date' ? value : formData.date,
+            name === 'time' ? value : formData.time
+          );
+        }
+      }
     }
   };
 
@@ -108,6 +187,12 @@ const BookAppointment = () => {
     if (!formData.date || !formData.time) {
       setMessage("Please select preferred date and time");
       return;
+    }
+
+    // Check if selected date is Sunday
+    const isSunday = checkIfSunday(formData.date);
+    if (isSunday) {
+      return; // Holiday message is already set by checkIfSunday function
     }
 
     try {
@@ -142,10 +227,32 @@ const BookAppointment = () => {
         body: JSON.stringify(appointmentData)
       });
 
+      // Check for 401 Unauthorized - invalid or expired token
+      if (res.status === 401) {
+        setMessage("Session expired. Please login again.");
+        setTimeout(() => {
+          localStorage.removeItem("token");
+          localStorage.removeItem("role");
+          navigate("/login");
+        }, 2000);
+        return;
+      }
+
       const data = await res.json();
 
       if (res.ok) {
         setMessage("Consultation booked successfully!");
+        
+        // Notify dashboard that a new appointment was booked
+        window.dispatchEvent(new CustomEvent('newAppointmentBooked', {
+          detail: {
+            timestamp: Date.now(),
+            clientName: formData.personalInfo.name,
+            clientEmail: formData.personalInfo.email,
+            attorneyId: attorneyId
+          }
+        }));
+        
         setTimeout(() => {
           navigate("/client/appointments");
         }, 2000);
@@ -385,6 +492,19 @@ const BookAppointment = () => {
                     min={new Date().toISOString().split('T')[0]}
                     required
                   />
+                  {holidayMessage && (
+                    <div className="holiday-message" style={{ 
+                      color: '#d32f2f', 
+                      fontSize: '14px', 
+                      marginTop: '8px',
+                      padding: '8px',
+                      backgroundColor: '#ffebee',
+                      borderRadius: '4px',
+                      border: '1px solid #ffcdd2'
+                    }}>
+                      {holidayMessage}
+                    </div>
+                  )}
                   <select
                     id="time"
                     name="time"
@@ -405,9 +525,20 @@ const BookAppointment = () => {
                 </div>
               </div>
 
-              <button type="submit" className="submit-btn">
-                {loading ? "Booking..." : "Book Consultation"}
-              </button>
+              <div className="submit-section">
+                {message && (
+                  <div className={`availability-message ${message.includes('⚠️') ? 'conflict' : 'available'}`}>
+                    {message}
+                  </div>
+                )}
+                <button 
+                  type="submit" 
+                  className={`submit-btn ${checkingAvailability ? 'checking' : ''} ${message.includes('⚠️') || holidayMessage ? 'disabled' : ''}`}
+                  disabled={checkingAvailability || message.includes('⚠️') || holidayMessage}
+                >
+                  {loading ? "Booking..." : checkingAvailability ? "Checking..." : message.includes('⚠️') || holidayMessage ? "Booking Disabled" : "Book Consultation"}
+                </button>
+              </div>
             </form>
           </div>
         </div>

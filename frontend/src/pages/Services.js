@@ -11,6 +11,8 @@ const Services = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [showPopup, setShowPopup] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
   const navigate = useNavigate();
 
   const categories = ["All", "Legal Service", "Consultation", "Document Review", "Court Representation", "Legal Advice"];
@@ -57,6 +59,16 @@ const Services = () => {
   const handleBookService = (service) => {
     // Navigate to attorneys page with service context
     navigate('/attorneys', { state: { service: service.service_name } });
+  };
+
+  const handleServiceClick = (service) => {
+    setSelectedService(service);
+    setShowPopup(true);
+  };
+
+  const closePopup = () => {
+    setShowPopup(false);
+    setSelectedService(null);
   };
 
   if (loading) {
@@ -108,7 +120,7 @@ const Services = () => {
             filteredServices.map((service) => {
               console.log('Rendering service:', service);
               return (
-                <div key={service.id} className="service-card">
+                <div key={service.id} className="service-card" onClick={() => handleServiceClick(service)}>
                   <div className="service-icon">
                     {/* <ServiceIcon 
                     iconName={service.icon || 'Gavel'} 
@@ -126,7 +138,10 @@ const Services = () => {
                   <div className="service-category">{service.category}</div>
                   <button
                     className="book-btn"
-                    onClick={() => handleBookService(service)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleBookService(service);
+                    }}
                   >
                     Book Service
                   </button>
@@ -140,6 +155,49 @@ const Services = () => {
           )}
         </div>
       </div>
+
+      {/* Service Popup */}
+      {showPopup && selectedService && (
+        <div className="service-popup-overlay" onClick={closePopup}>
+          <div className="service-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="popup-header">
+              <button className="popup-close" onClick={closePopup}>×</button>
+            </div>
+            <div className="popup-content">
+              <div className="popup-icon">
+                <ServiceIcon
+                  iconName={selectedService.icon || 'Gavel'}
+                  iconFile={selectedService.icon_file}
+                  size={80}
+                />
+              </div>
+              <h2>{selectedService.service_name}</h2>
+              <div className="popup-category">{selectedService.category}</div>
+              <p className="popup-description">
+                {selectedService.description || 'Professional legal service'}
+              </p>
+              <div className="popup-actions">
+                <button
+                  className="popup-book-btn"
+                  onClick={() => {
+                    handleBookService(selectedService);
+                    closePopup();
+                  }}
+                >
+                  Book Service
+                </button>
+                <button
+                  className="popup-close-btn"
+                  onClick={closePopup}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </>
   );

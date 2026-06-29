@@ -262,14 +262,16 @@
 .login-form {
   flex: 0 0 476px;
   background: white;
-  padding: 85px 40px;
+  padding: 93px 40px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   border-radius: 0 15px 15px 0;
 }
 
-
+.login-form .form-group label{
+  color: black !important;
+}
 
 .login-form .get {
   padding: 5px 14px;

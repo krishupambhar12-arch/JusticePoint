@@ -18,6 +18,13 @@ const Header = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("user");
+    navigate("/");
+  };
+
   return (
     <header className="site-header">
       <div className="logo">Justice Point</div>
@@ -30,13 +37,16 @@ const Header = () => {
       </nav>
 
       <div className="header-actions">
-        <Link to="/login" className="login-btn">Login </Link>
-
-        {role && (
-          <FaUserCircle
-            className="dashboard-icon"
-            onClick={goToDashboard}
-          />
+        {role ? (
+          <>
+            <FaUserCircle
+              className="profile-icon"
+              onClick={goToDashboard}
+            />
+            <button onClick={handleLogout} className="logout-btn">Logout</button>
+          </>
+        ) : (
+          <Link to="/login" className="login-btn">Login </Link>
         )}
       </div>
     </header>

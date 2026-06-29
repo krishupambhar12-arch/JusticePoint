@@ -15,6 +15,8 @@ const AdminAppointments = () => {
   const [viewAppointment, setViewAppointment] = useState(null);
   const [users, setUsers] = useState([]);
   const [doctors, setDoctors] = useState([]);
+  const [doctorSearch, setDoctorSearch] = useState('');
+  const [selectedSpecialty, setSelectedSpecialty] = useState('all');
   const [actionLoading, setActionLoading] = useState({
     updating: null,
     deleting: null,
@@ -218,6 +220,55 @@ const AdminAppointments = () => {
     user.email.toLowerCase().includes(patientSearch.toLowerCase())
   );
 
+  const filteredDoctors = React.useMemo(() => {
+    return doctors.filter(doctor => {
+      const doctorName = (doctor.name || '').toLowerCase();
+      const doctorEmail = (doctor.email || '').toLowerCase();
+      const doctorSpecialization = (doctor.specialization || '').toLowerCase();
+      const searchTerm = (doctorSearch || '').toLowerCase();
+      
+      const matchesSearch = !doctorSearch || 
+        doctorName.includes(searchTerm) ||
+        doctorEmail.includes(searchTerm) ||
+        doctorSpecialization.includes(searchTerm);
+      
+      const matchesSpecialty = selectedSpecialty === 'all' || 
+        (doctor.specialization && doctor.specialization === selectedSpecialty);
+      
+      return matchesSearch && matchesSpecialty;
+    });
+  }, [doctors, doctorSearch, selectedSpecialty]);
+
+  console.log("🔍 AdminAppointments Debug:");
+  console.log("  - Total doctors:", doctors.length);
+  console.log("  - Doctor search:", doctorSearch);
+  console.log("  - Selected specialty:", selectedSpecialty);
+  console.log("  - Filtered doctors:", filteredDoctors.length);
+
+  // Filter appointments based on selected attorney
+  const filteredAppointments = React.useMemo(() => {
+    if (!doctorSearch && selectedSpecialty === 'all') {
+      return appointments;
+    }
+    
+    return appointments.filter(appointment => {
+      const attorneyName = (appointment.doctor?.name || '').toLowerCase();
+      const attorneySpecialization = (appointment.doctor?.specialization || '').toLowerCase();
+      const searchTerm = (doctorSearch || '').toLowerCase();
+      
+      const matchesSearch = !doctorSearch || 
+        attorneyName.includes(searchTerm) ||
+        attorneySpecialization.includes(searchTerm);
+      
+      const matchesSpecialty = selectedSpecialty === 'all' || 
+        (appointment.doctor?.specialization && appointment.doctor.specialization === selectedSpecialty);
+      
+      return matchesSearch && matchesSpecialty;
+    });
+  }, [appointments, doctorSearch, selectedSpecialty]);
+
+  console.log("  - Filtered appointments:", filteredAppointments.length);
+
   const handleBookAppointment = async (e) => {
     e.preventDefault();
     
@@ -307,13 +358,54 @@ const AdminAppointments = () => {
               >
                 + Add Appointment
               </button> */}
-            {/* <button 
-              onClick={markExpiredAppointments}
-              className="mark-expired-btn"
-              disabled={actionLoading.markingExpired}
-            >
-              {actionLoading.markingExpired ? 'Please wait...' : 'Mark Expired Appointments'}
-            </button> */}
+              {/* <button 
+                onClick={markExpiredAppointments}
+                className="mark-expired-btn"
+                disabled={actionLoading.markingExpired}
+              >
+                {actionLoading.markingExpired ? 'Please wait...' : 'Mark Expired Appointments'}
+              </button> */}
+            </div>
+          </div>
+          
+          {/* Attorney Search and Filter Section */}
+          <div className="attorney-search-section">
+            <h3>Search & Filter Attorneys</h3>
+            <div className="search-filter-container">
+              <div className="search-box">
+                <input
+                  type="text"
+                  placeholder="Search attorneys by name, specialization....."
+                  value={doctorSearch}
+                  onChange={(e) => setDoctorSearch(e.target.value)}
+                  className="search-input"
+                />
+                <button className="search-btn">Search</button>
+              </div>
+              
+              <div className="filter-box">
+                <label htmlFor="specialty-filter">Filter by Speciality:</label>
+                <select
+                  id="specialty-filter"
+                  value={selectedSpecialty}
+                  onChange={(e) => setSelectedSpecialty(e.target.value)}
+                  className="specialty-select"
+                >
+                  <option value="all">All Specialities</option>
+                  <option value="Family Law">Family Law</option>
+                  <option value="Corporate Law">Corporate Law</option>
+                  <option value="Criminal Law">Criminal Law</option>
+                  <option value="Civil Law">Civil Law</option>
+                  <option value="Real Estate Law">Real Estate Law</option>
+                  <option value="Tax Law">Tax Law</option>
+                  <option value="Immigration Law">Immigration Law</option>
+                  <option value="Intellectual Property Law">Intellectual Property Law</option>
+                  <option value="Labor Law">Labor Law</option>
+                  <option value="Environmental Law">Environmental Law</option>
+                  <option value="Administrative Law">Administrative Law</option>
+                  <option value="Cyber Security Law">Cyber Security Law</option>
+                </select>
+              </div>
             </div>
           </div>
           <div className="appointments-table">
@@ -329,7 +421,7 @@ const AdminAppointments = () => {
                 </tr>
               </thead>
               <tbody>
-                {appointments && appointments.length > 0 ? appointments.map(appointment => (
+                {filteredAppointments && filteredAppointments.length > 0 ? filteredAppointments.map(appointment => (
                   <tr key={appointment.id}>
                     <td>{appointment.date}</td>
                     <td>{appointment.time}</td>
@@ -402,7 +494,11 @@ const AdminAppointments = () => {
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan="6" className="no-appointments">No appointments found</td>
+                    <td colSpan="6" className="no-appointments">
+                      {doctorSearch || selectedSpecialty !== 'all' 
+                        ? 'No appointments found matching your search criteria' 
+                        : 'No appointments found'}
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -493,7 +589,7 @@ const AdminAppointments = () => {
                     required
                     >
                     <option value="">Select Attorney</option>
-                    {doctors.map(doctor => (
+                    {filteredDoctors.map(doctor => (
                       <option key={doctor.id} value={doctor.id}>
                         Dr. {doctor.name} - {doctor.specialization}
                       </option>

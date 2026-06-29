@@ -38,6 +38,7 @@
 
 .profile-info {
   flex: 1;
+  margin-left: -539px;
 }
 
 .profile-info h1 {
