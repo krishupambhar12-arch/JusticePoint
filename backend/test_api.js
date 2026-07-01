@@ -6,12 +6,24 @@ async function testAPI() {
   try {
     // Test attorneys endpoint
     console.log('\n1. Testing /consultation/attorneys endpoint...');
+    // NOTE: this test script needs a real JWT.
+    // Set TEST_TOKEN in environment before running.
+    const TEST_TOKEN = process.env.TEST_TOKEN || '';
+
+    if (!TEST_TOKEN) {
+      console.log('\n⚠️  TEST_TOKEN not set. Skipping token-based endpoints.');
+      return;
+    }
+
+
+
     const attorneysRes = await fetch('http://localhost:5000/consultation/attorneys', {
       headers: {
-        'Authorization': 'Bearer test-token',
+        'Authorization': `Bearer ${TEST_TOKEN}`,
         'Content-Type': 'application/json'
       }
     });
+
     const attorneysData = await attorneysRes.json();
     console.log('Status:', attorneysRes.status);
     console.log('Response:', attorneysData);

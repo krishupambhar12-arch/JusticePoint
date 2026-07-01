@@ -3,6 +3,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Attorney = require("../models/Attorney");
+const auth = require("../middleware/auth");
+
 const router = express.Router();
 const axios = require('axios');
 const multer = require('multer');
@@ -306,27 +308,6 @@ router.get("/profile", auth, async (req, res) => {
 
 module.exports = router;
 
-    // Update attorney password (will be hashed by pre-save hook)
-    console.log("🔍 Updating attorney password...");
-    attorney.attorneyPassword = newPassword;
-    await attorney.save();
-
-    console.log("✅ Attorney password updated successfully");
-
-    res.json({
-      message: "Attorney password updated successfully! You can now login with your new password.",
-      attorney: {
-        id: attorney._id,
-        attorneyName: attorney.attorneyName,
-        attorneyEmail: attorney.attorneyEmail
-      }
-    });
-
-  } catch (error) {
-    console.error("❌ Attorney forgot password error:", error);
-    res.status(500).json({ message: "Server error: " + error.message });
-  }
-});
 
 // Set Password for Google Users
 router.post("/set-password", async (req, res) => {
