@@ -59,8 +59,8 @@ console.log("   - Responsive design for mobile devices");
 
 console.log("");
 console.log("🌐 Access Points:");
-console.log("   - Admin Attorneys: http://localhost:3000/admin/doctors");
-console.log("   - User Attorney Listing: http://localhost:3000/attorneys");
+console.log("   - Admin Attorneys: https://justicepoint.onrender.com/admin/doctors");
+console.log("   - User Attorney Listing: https://justicepoint.onrender.com/attorneys");
 
 console.log("");
 console.log("🔍 Test Scenarios:");

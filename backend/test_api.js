@@ -17,7 +17,7 @@ async function testAPI() {
 
 
 
-    const attorneysRes = await fetch('http://localhost:5000/consultation/attorneys', {
+    const attorneysRes = await fetch('https://justicepoint-backend.onrender.com/consultation/attorneys', {
       headers: {
         'Authorization': `Bearer ${TEST_TOKEN}`,
         'Content-Type': 'application/json'
@@ -30,7 +30,7 @@ async function testAPI() {
     
     // Test consultations endpoint
     console.log('\n2. Testing /consultation/my-consultations endpoint...');
-    const consultationsRes = await fetch('http://localhost:5000/consultation/my-consultations', {
+    const consultationsRes = await fetch('https://justicepoint-backend.onrender.com/consultation/my-consultations', {
       headers: {
         'Authorization': 'Bearer test-token',
         'Content-Type': 'application/json'

@@ -29,7 +29,7 @@ const BookAppointment = () => {
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [holidayMessage, setHolidayMessage] = useState("");
 
-  const BACKEND_URL = "http://localhost:5000";
+  const BACKEND_URL = "https://justicepoint-backend.onrender.com";
 
   // Function to check if selected date is Sunday
   const checkIfSunday = (dateString) => {

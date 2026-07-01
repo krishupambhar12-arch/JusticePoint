@@ -498,7 +498,7 @@ router.put("/profile", async (req, res) => {
 
 // Google OAuth GET route (for redirect from Google)
 router.get("/auth/google", (req, res) => {
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/user';
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'https://justicepoint.onrender.com/user';
   
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
     `client_id=${process.env.GOOGLE_CLIENT_ID}&` +
@@ -723,7 +723,7 @@ router.post("/auth/google", async (req, res) => {
 
 // Facebook OAuth GET route (for redirect from Facebook)
 router.get("/auth/facebook", (req, res) => {
-  const redirectUri = process.env.FACEBOOK_REDIRECT_URI || 'http://localhost:3000/auth/facebook/callback';
+  const redirectUri = process.env.FACEBOOK_REDIRECT_URI || 'https://justicepoint.onrender.com/auth/facebook/callback';
   
   const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?` +
     `client_id=${process.env.FACEBOOK_APP_ID}&` +
@@ -892,7 +892,7 @@ router.post("/auth/facebook", async (req, res) => {
 
 // LinkedIn OAuth GET route (for redirect from LinkedIn)
 router.get("/auth/linkedin", (req, res) => {
-  const redirectUri = process.env.LINKEDIN_REDIRECT_URI || 'http://localhost:3000/auth/linkedin/callback';
+  const redirectUri = process.env.LINKEDIN_REDIRECT_URI || 'https://justicepoint.onrender.com/auth/linkedin/callback';
   
   const authUrl = `https://www.linkedin.com/oauth/v2/authorization?` +
     `client_id=${process.env.LINKEDIN_CLIENT_ID}&` +

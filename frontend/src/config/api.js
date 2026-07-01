@@ -1,5 +1,5 @@
 // Backend base URL 
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = "https://justicepoint-backend.onrender.com";
 
 export const API = {
   REGISTER: `${BASE_URL}/user/register`,

@@ -43,10 +43,10 @@ console.log("   - Database consistency maintained");
 
 console.log("");
 console.log("🌐 Access Points:");
-console.log("   - User Registration: http://localhost:3000/register");
-console.log("   - User Login: http://localhost:3000/login");
-console.log("   - Admin Clients: http://localhost:3000/admin/patients");
-console.log("   - Client Dashboard: http://localhost:3000/client/dashboard");
+console.log("   - User Registration: https://justicepoint.onrender.com/register");
+console.log("   - User Login: https://justicepoint.onrender.com/login");
+console.log("   - Admin Clients: https://justicepoint.onrender.com/admin/patients");
+console.log("   - Client Dashboard: https://justicepoint.onrender.com/client/dashboard");
 
 console.log("");
 console.log("🔍 Test Scenarios:");

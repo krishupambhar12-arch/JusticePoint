@@ -19,18 +19,18 @@ const Login = () => {
     const name = urlParams.get('name');
     const email = urlParams.get('email');
     const error = urlParams.get('error');
-    
+
     // Check if user is already logged in
     const existingToken = localStorage.getItem("token");
     const existingRole = localStorage.getItem("role");
-    
+
     // If user is already logged in and is a client, redirect to dashboard
     if (existingToken && existingRole === "Client" && !token) {
       console.log('User already logged in, redirecting to dashboard...');
       navigate("/client/dashboard", { replace: true });
       return;
     }
-    
+
     // Clear URL parameters to prevent infinite loops
     if (token || error) {
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -45,26 +45,26 @@ const Login = () => {
     // Handle successful login
     if (token && role && name && email) {
       console.log('Google OAuth callback received:', { token, role, name, email });
-      
+
       // Only allow Client users
       if (role !== "Client") {
         console.log('Invalid role for client login:', role);
         setMessage("❌ Access denied. This login is for clients only.");
         return;
       }
-      
+
       // Save user data to localStorage
       localStorage.setItem("token", token);
       localStorage.setItem("role", role);
       localStorage.setItem("name", name);
       localStorage.setItem("email", email);
-      
+
       // Clear redirect path
       localStorage.removeItem('redirectAfterLogin');
-      
+
       // Show success message
       setMessage("✅ Google Login Successful! Redirecting...");
-      
+
       // Redirect to client dashboard immediately
       console.log('Redirecting to client dashboard...');
       setTimeout(() => {
@@ -84,22 +84,24 @@ const Login = () => {
           // Store current page for redirect after Google login
           localStorage.setItem('redirectAfterLogin', '/client/dashboard');
           // Direct redirect to backend Google OAuth route with callback URL
-          const googleCallbackUrl = encodeURIComponent('http://localhost:3000/login');
-          window.location.href = `http://localhost:5000/user/auth/google?callback_url=${googleCallbackUrl}`;
+          const googleCallbackUrl = encodeURIComponent('https://justicepoint.onrender.com/login');
+          window.location.href = `https://justicepoint-backend.onrender.com/user/auth/google?callback_url=${googleCallbackUrl}`;
           return;
         case 'facebook':
           // Store current page for redirect after Facebook login
           localStorage.setItem('redirectAfterLogin', '/client/dashboard');
           // Direct redirect to backend Facebook OAuth route with callback URL
-          const facebookCallbackUrl = encodeURIComponent('http://localhost:3000/login');
-          window.location.href = `http://localhost:5000/user/auth/facebook?callback_url=${facebookCallbackUrl}`;
+          const facebookCallbackUrl = encodeURIComponent('https://justicepoint.onrender.com/login');
+
+          window.location.href = `https://justicepoint-backend.onrender.com/user/auth/facebook?callback_url=${facebookCallbackUrl}`;
           return;
         case 'linkedin':
           // Store current page for redirect after LinkedIn login
           localStorage.setItem('redirectAfterLogin', '/client/dashboard');
           // Direct redirect to backend LinkedIn OAuth route with callback URL
-          const linkedinCallbackUrl = encodeURIComponent('http://localhost:3000/login');
-          window.location.href = `http://localhost:5000/user/auth/linkedin?callback_url=${linkedinCallbackUrl}`;
+          const linkedinCallbackUrl = encodeURIComponent('https://justicepoint.onrender.com/login');
+
+          window.location.href = `https://justicepoint-backend.onrender.com/user/auth/linkedin?callback_url=${linkedinCallbackUrl}`;
           return;
         default:
           return;
@@ -113,18 +115,18 @@ const Login = () => {
   const setPasswordForGoogleUser = async (email, newPassword) => {
     try {
       setMessage("🔐 Setting up your password...");
-      
-      const res = await fetch('http://localhost:5000/user/set-password', {
+
+      const res = await fetch('https://justicepoint-backend.onrender.com/user/set-password', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, newPassword }),
       });
 
       const data = await res.json();
-      
+
       if (res.ok) {
         setMessage("✅ Password set successfully! You can now login with your email and password.");
-        
+
         // Auto-login after password setup
         setTimeout(() => {
           setForm({ ...form, password: newPassword });
@@ -171,7 +173,7 @@ const Login = () => {
         // Handle Google user who needs to set password
         if (data.requiresPasswordSetup && data.isGoogleUser) {
           setMessage(`🔑 This account was created with Google. Please set a password to login with email.`);
-          
+
           // Show password setup dialog
           setTimeout(() => {
             const newPassword = prompt(`Set a password for ${data.email}:`);
@@ -185,18 +187,18 @@ const Login = () => {
           }, 1000);
           return;
         }
-        
+
         // Handle Gmail-specific errors
         if (data.isGmailAddress && data.suggestGoogleLogin) {
           setMessage(`📧 ${data.message}`);
           return;
         }
-        
+
         if (data.requiresGoogleLogin && data.isGoogleUser) {
           setMessage(`🔐 ${data.message}`);
           return;
         }
-        
+
         setMessage(data.message || "Login failed");
         return;
       }
@@ -211,24 +213,24 @@ const Login = () => {
 
       // Show success message
       setMessage("✅ Login Successful! Redirecting...");
-      
+
       // token & role save
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.user ? data.user.role : data.attorney.role);
-      
+
       // Save user name and email for dashboard use
       const userName = data.user ? data.user.name : data.attorney.name;
       const userEmail = data.user ? data.user.email : data.attorney.email;
-      
+
       if (userName) {
         localStorage.setItem("name", userName);
       }
       if (userEmail) {
         localStorage.setItem("email", userEmail);
       }
-      
-      console.log('Saved to localStorage:', { 
-        token: data.token, 
+
+      console.log('Saved to localStorage:', {
+        token: data.token,
         role: data.user ? data.user.role : data.attorney.role,
         name: userName,
         email: userEmail
@@ -238,7 +240,7 @@ const Login = () => {
       setTimeout(() => {
         // Only allow Client users - role wise navigation
         const userRole = data.user ? data.user.role : data.attorney.role;
-        
+
         if (userRole === "Client") {
           console.log('Navigating to client dashboard');
           navigate("/client/dashboard");
@@ -272,72 +274,72 @@ const Login = () => {
           {/* Home Arrow Button */}
           <Link to="/" className="home-arrow-btn">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+              <path d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             {/* <span>Home</span> */}
           </Link>
-          
+
           <div className="brand-section">
             <h1 className="brand-name">Justice Point</h1>
             <p className="brand-tagline">Your Trusted Legal Partner</p>
           </div>
-          
+
           <div className="features-section">
             <h3>Why Choose Justice Point?</h3>
             <div>
-            <div className="feature-item">
-              <div className="feature-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
+              <div className="feature-item">
+                <div className="feature-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="feature-text">
+                  <h4>Verified Attorneys</h4>
+                  {/* <p>Connect with experienced and verified legal professionals</p> */}
+                </div>
               </div>
-              <div className="feature-text">
-                <h4>Verified Attorneys</h4>
-                {/* <p>Connect with experienced and verified legal professionals</p> */}
-              </div>
-            </div>
-            
-            <div className="feature-item">
-              <div className="feature-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                </svg>
-              </div>
-              <div className="feature-text">
-                <h4>Secure & Confidential</h4>
-                {/* <p>Your legal matters are handled with complete privacy</p> */}
-              </div>
-            </div>
-            
-            <div className="feature-item">
-              <div className="feature-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M12 6v6l4 4"/>
 
-                </svg>
+              <div className="feature-item">
+                <div className="feature-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <div className="feature-text">
+                  <h4>Secure & Confidential</h4>
+                  {/* <p>Your legal matters are handled with complete privacy</p> */}
+                </div>
               </div>
-              <div className="feature-text">
-                <h4>24/7 client support</h4>
-                {/* <p>Round-the-clock assistance whenever you need it</p> */}
+
+              <div className="feature-item">
+                <div className="feature-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
+                    <path d="M12 6v6l4 4" />
+
+                  </svg>
+                </div>
+                <div className="feature-text">
+                  <h4>24/7 client support</h4>
+                  {/* <p>Round-the-clock assistance whenever you need it</p> */}
+                </div>
+              </div>
+
+              <div className="feature-item">
+                <div className="feature-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div className="feature-text">
+                  <h4>Quick Solutions</h4>
+                  {/* <p>Fast and efficient legal assistance when you need it</p> */}
+                </div>
               </div>
             </div>
-            
-            <div className="feature-item">
-              <div className="feature-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                </svg>
-              </div>
-              <div className="feature-text">
-                <h4>Quick Solutions</h4>
-                {/* <p>Fast and efficient legal assistance when you need it</p> */}
-              </div>
-            </div>
-            </div>  
           </div>
-          
-          
+
+
 
           <div className="testimonials-section">
             <div className="testimonial">
@@ -354,94 +356,94 @@ const Login = () => {
 
         {/* Right Side - Login Form */}
         <form className="login-form" onSubmit={handleSubmit}>
-            <h1 className="get">Get Started</h1>
-            <h4 className="ac">Login to your account or create a new one</h4>
+          <h1 className="get">Get Started</h1>
+          <h4 className="ac">Login to your account or create a new one</h4>
           <h2>Login</h2>
 
-        {message && (
-          <div className={`message ${message.includes('✅') ? 'success' : 'error'}`}>
-            {message}
+          {message && (
+            <div className={`message ${message.includes('✅') ? 'success' : 'error'}`}>
+              {message}
+            </div>
+          )}
+
+          <div className="form-group">
+            <label>Email</label>
+            <input type="email" name="email" onChange={handleChange} required />
           </div>
-        )}
 
-        <div className="form-group">
-          <label>Email</label>
-          <input type="email" name="email" onChange={handleChange} required />
-        </div>
+          <div className="form-group">
+            <label>Password</label>
+            <div className="password-input-container">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                onChange={handleChange}
+                required
+                className="password-input"
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
 
-        <div className="form-group">
-          <label>Password</label>
-          <div className="password-input-container">
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              onChange={handleChange}
-              required
-              className="password-input"
-            />
+          <div className="form-links">
             <button
               type="button"
-              className="password-toggle-btn"
-              onClick={() => setShowPassword(!showPassword)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="forgot-password"
+              onClick={() => navigate("/forgot-password")}
             >
-              {showPassword ? (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
-                </svg>
-              ) : (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-              )}
+              Forgot password?
             </button>
           </div>
-        </div>
 
-        <div className="form-links">
           <button
-            type="button"
-            className="forgot-password"
-            onClick={() => navigate("/forgot-password")}
+            type="submit"
+            className="login-button"
+            disabled={loading}
+            style={{ backgroundColor: '#5c4750' }}
           >
-            Forgot password?
+            {loading ? 'Please wait...' : 'Login'}
           </button>
-        </div>
 
-        <button 
-          type="submit" 
-          className="login-button" 
-          disabled={loading}
-          style={{ backgroundColor: '#5c4750' }}
-        >
-          {loading ? 'Please wait...' : 'Login'}
-        </button>
+          <div className="social-login-divider">
+            <span>or continue with</span>
+          </div>
 
-        <div className="social-login-divider">
-          <span>or continue with</span>
-        </div>
+          <div className="social-login-buttons">
+            <button
+              type="button"
+              className="social-btn google-btn"
+              onClick={() => handleSocialLogin('google')}
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18">
+                <path fill="#4285F4" d="M16.51 9H9v2.89h4.13c-.18 1.01-.73 1.87-1.55 2.44v1.87h2.51c1.47-1.35 2.32-3.34 2.32-5.7 0-.57-.06-1.12-.18-1.5z" />
+                <path fill="#34A853" d="M9 17c2.16 0 3.97-.71 5.29-1.93l-2.51-1.87c-.7.47-1.59.73-2.78.73-2.13 0-3.94-1.44-4.59-3.38H1.83v1.93C3.13 15.53 5.87 17 9 17z" />
+                <path fill="#FBBC05" d="M4.41 10.05c-.17-.51-.26-1.06-.26-1.62s.09-1.11.26-1.62V4.88H1.83C1.31 5.88 1 7.02 1 8.43s.31 2.55.83 3.55l1.58-1.93z" />
+                <path fill="#EA4335" d="M9 3.38c1.21 0 2.3.42 3.16 1.24l2.22-2.22C12.96 1.09 11.16.43 9 .43 5.87.43 3.13 1.97 1.83 4.88l2.58 1.93C5.06 4.82 6.87 3.38 9 3.38z" />
+              </svg>
+              Google
+            </button>
+          </div>
 
-        <div className="social-login-buttons">
-          <button 
-            type="button" 
-            className="social-btn google-btn"
-            onClick={() => handleSocialLogin('google')}
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18">
-              <path fill="#4285F4" d="M16.51 9H9v2.89h4.13c-.18 1.01-.73 1.87-1.55 2.44v1.87h2.51c1.47-1.35 2.32-3.34 2.32-5.7 0-.57-.06-1.12-.18-1.5z"/>
-              <path fill="#34A853" d="M9 17c2.16 0 3.97-.71 5.29-1.93l-2.51-1.87c-.7.47-1.59.73-2.78.73-2.13 0-3.94-1.44-4.59-3.38H1.83v1.93C3.13 15.53 5.87 17 9 17z"/>
-              <path fill="#FBBC05" d="M4.41 10.05c-.17-.51-.26-1.06-.26-1.62s.09-1.11.26-1.62V4.88H1.83C1.31 5.88 1 7.02 1 8.43s.31 2.55.83 3.55l1.58-1.93z"/>
-              <path fill="#EA4335" d="M9 3.38c1.21 0 2.3.42 3.16 1.24l2.22-2.22C12.96 1.09 11.16.43 9 .43 5.87.43 3.13 1.97 1.83 4.88l2.58 1.93C5.06 4.82 6.87 3.38 9 3.38z"/>
-            </svg>
-            Google
-          </button>
-        </div>
-
-        <div className="register-link">
-          Don't have an account? <a href="/register">Register</a>
-        </div>
+          <div className="register-link">
+            Don't have an account? <a href="/register">Register</a>
+          </div>
         </form>
       </div>
     </div>

@@ -21,7 +21,7 @@ const ServiceIcon = ({ iconName, iconFile, size = 48, className = '' }) => {
     
     const iconUrl = iconFile.startsWith('http') 
       ? iconFile // Already a URL
-      : `http://localhost:5000/uploads/services/${filename}`; // Construct URL for frontend
+      : `https://justicepoint-backend.onrender.com/uploads/services/${filename}`; // Construct URL for frontend
     
     return (
       <img 

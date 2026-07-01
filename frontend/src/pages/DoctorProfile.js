@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/AttorneySidebar";
 import "../styles/doctorProfile.css";
 import { API } from "../config/api";
-const BACKEND_URL = "http://localhost:5000";
+const BACKEND_URL = "https://justicepoint-backend.onrender.com";
 
 const AttorneyProfile = () => {
   const navigate = useNavigate();

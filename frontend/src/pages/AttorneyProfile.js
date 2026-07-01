@@ -440,14 +440,14 @@ const AttorneyProfile = () => {
                     if (!profilePic.startsWith('http')) {
                       // If URL already has uploads/, don't add it again
                       if (profilePic.startsWith('uploads/')) {
-                        imageUrl = `http://localhost:5000/${profilePic}`;
+                        imageUrl = `https://justicepoint-backend.onrender.com/${profilePic}`;
                       } else {
                         // Try different base URLs
                         const possibleUrls = [
-                          `http://localhost:5000/${profilePic}`,
-                          `http://localhost:5000/uploads/${profilePic}`,
-                          `http://localhost:5000/public/${profilePic}`,
-                          `http://localhost:5000/images/${profilePic}`
+                          `https://justicepoint-backend.onrender.com/${profilePic}`,
+                          `https://justicepoint-backend.onrender.com/uploads/${profilePic}`,
+                          `https://justicepoint-backend.onrender.com/public/${profilePic}`,
+                          `https://justicepoint-backend.onrender.com/images/${profilePic}`
                         ];
                         imageUrl = possibleUrls[0]; // Try first one
                       }
@@ -469,11 +469,11 @@ const AttorneyProfile = () => {
                               
                               // If original had uploads/, try without it
                               if (profilePic.startsWith('uploads/')) {
-                                fallbackUrls.push(`http://localhost:5000/${profilePic.replace('uploads/', '')}`);
+                                fallbackUrls.push(`https://justicepoint-backend.onrender.com/${profilePic.replace('uploads/', '')}`);
                               } else {
-                                fallbackUrls.push(`http://localhost:5000/uploads/${profilePic}`);
-                                fallbackUrls.push(`http://localhost:5000/public/${profilePic}`);
-                                fallbackUrls.push(`http://localhost:5000/images/${profilePic}`);
+                                fallbackUrls.push(`https://justicepoint-backend.onrender.com/uploads/${profilePic}`);
+                                fallbackUrls.push(`https://justicepoint-backend.onrender.com/public/${profilePic}`);
+                                fallbackUrls.push(`https://justicepoint-backend.onrender.com/images/${profilePic}`);
                               }
                               
                               let currentUrl = imageUrl;

@@ -58,9 +58,9 @@ testServices.forEach((service, index) => {
 
 console.log("");
 console.log("🌐 Access Points:");
-console.log("   - Admin Panel: http://localhost:3000/admin/services");
-console.log("   - User Services: http://localhost:3000/services");
-console.log("   - Home Page: http://localhost:3000/ (shows services dynamically)");
+console.log("   - Admin Panel: https://justicepoint.onrender.com/admin/services");
+console.log("   - User Services: https://justicepoint.onrender.com/services");
+console.log("   - Home Page: https://justicepoint.onrender.com/ (shows services dynamically)");
 
 console.log("");
 console.log("🔄 Synchronization:");

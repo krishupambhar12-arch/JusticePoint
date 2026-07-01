@@ -14,17 +14,17 @@ MONGO_URI=mongodb://127.0.0.1:27017/justiceapp
 # Google OAuth Credentials
 GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_REDIRECT_URI=http://localhost:3000/user
+GOOGLE_REDIRECT_URI=https://justicepoint.onrender.com/user
 
 # Facebook OAuth Credentials
 FACEBOOK_APP_ID=your-facebook-app-id
 FACEBOOK_APP_SECRET=your-facebook-app-secret
-FACEBOOK_REDIRECT_URI=http://localhost:3000/auth/facebook/callback
+FACEBOOK_REDIRECT_URI=https://justicepoint.onrender.com/auth/facebook/callback
 
 # LinkedIn OAuth Credentials
 LINKEDIN_CLIENT_ID=your-linkedin-client-id
 LINKEDIN_CLIENT_SECRET=your-linkedin-client-secret
-LINKEDIN_REDIRECT_URI=http://localhost:3000/auth/linkedin/callback
+LINKEDIN_REDIRECT_URI=https://justicepoint.onrender.com/auth/linkedin/callback
 
 # JWT Secret
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
@@ -67,10 +67,10 @@ JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 | `MONGO_URI` | MongoDB connection string | `mongodb://127.0.0.1:27017/justiceapp` |
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID | `your-google-client-id.apps.googleusercontent.com` |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | `your-google-client-secret` |
-| `GOOGLE_REDIRECT_URI` | Google OAuth redirect URI | `http://localhost:3000/user` |
+| `GOOGLE_REDIRECT_URI` | Google OAuth redirect URI | `https://justicepoint.onrender.com/user` |
 | `FACEBOOK_APP_ID` | Facebook app ID | `your-facebook-app-id` |
 | `FACEBOOK_APP_SECRET` | Facebook app secret | `your-facebook-app-secret` |
-| `FACEBOOK_REDIRECT_URI` | Facebook redirect URI | `http://localhost:3000/auth/facebook/callback` |
+| `FACEBOOK_REDIRECT_URI` | Facebook redirect URI | `https://justicepoint.onrender.com/auth/facebook/callback` |
 | `LINKEDIN_CLIENT_ID` | LinkedIn client ID | `your-linkedin-client-id` |
 | `LINKEDIN_CLIENT_SECRET` | LinkedIn client secret | `your-linkedin-client-secret` |
 | `LINKEDIN_REDIRECT_URI` | LinkedIn redirect URI | `https://your-ngrok-url/auth/linkedin/callback` |
@@ -91,19 +91,19 @@ JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 2. Create new project or select existing
 3. Enable Google+ API
 4. Create OAuth 2.0 credentials
-5. Add authorized redirect URI: `http://localhost:3000/user`
+5. Add authorized redirect URI: `https://justicepoint.onrender.com/user`
 
 ### Facebook OAuth:
 1. Go to [Facebook Developers](https://developers.facebook.com/)
 2. Create new app
 3. Add Facebook Login product
-4. Configure OAuth redirect URI: `http://localhost:3000/auth/facebook/callback`
+4. Configure OAuth redirect URI: `https://justicepoint.onrender.com/auth/facebook/callback`
 
 ### LinkedIn OAuth:
 1. Go to [LinkedIn Developers](https://www.linkedin.com/developers/)
 2. Create new app
 3. Add Sign In with LinkedIn
-4. Configure redirect URI: `http://localhost:3000/auth/linkedin/callback`
+4. Configure redirect URI: `https://justicepoint.onrender.com/auth/linkedin/callback`
 
 ## 🔍 Troubleshooting
 

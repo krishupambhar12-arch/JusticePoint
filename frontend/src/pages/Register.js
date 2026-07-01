@@ -41,7 +41,7 @@ const Register = () => {
            console.log("CLIENT ID:", process.env.REACT_APP_GOOGLE_CLIENT_ID);          
           authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
             `client_id=${process.env.REACT_APP_GOOGLE_CLIENT_ID}&` +
-            `redirect_uri=${encodeURIComponent('http://localhost:3000/user')}&` +
+            `redirect_uri=${encodeURIComponent('https://justicepoint.onrender.com/user')}&` +
             `response_type=code&` +
             `scope=${encodeURIComponent('https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid')}&` +
             `access_type=offline&` +

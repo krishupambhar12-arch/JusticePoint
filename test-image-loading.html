@@ -8,17 +8,17 @@
     <p>Testing direct image access from backend...</p>
     
     <h2>Test 1: Direct backend access</h2>
-    <img src="http://localhost:5000/uploads/1755899098916.jpg" alt="Test Image 1" style="max-width: 200px; border: 1px solid red;" onerror="this.style.border='2px solid red'; this.alt='FAILED TO LOAD';">
+    <img src="https://justicepoint-backend.onrender.com/uploads/1755899098916.jpg" alt="Test Image 1" style="max-width: 200px; border: 1px solid red;" onerror="this.style.border='2px solid red'; this.alt='FAILED TO LOAD';">
     
     <h2>Test 2: Another image</h2>
-    <img src="http://localhost:5000/uploads/1771411083401.jpg" alt="Test Image 2" style="max-width: 200px; border: 1px solid green;" onerror="this.style.border='2px solid red'; this.alt='FAILED TO LOAD';">
+    <img src="https://justicepoint-backend.onrender.com/uploads/1771411083401.jpg" alt="Test Image 2" style="max-width: 200px; border: 1px solid green;" onerror="this.style.border='2px solid red'; this.alt='FAILED TO LOAD';">
     
     <h2>Test 3: Backend test endpoint</h2>
     <div id="test-result">Loading...</div>
     
     <script>
         // Test backend endpoint
-        fetch('http://localhost:5000/uploads-test')
+        fetch('https://justicepoint-backend.onrender.com/uploads-test')
             .then(response => response.json())
             .then(data => {
                 document.getElementById('test-result').innerHTML = 

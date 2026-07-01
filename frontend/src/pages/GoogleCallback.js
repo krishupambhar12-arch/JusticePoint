@@ -40,7 +40,7 @@ const GoogleCallback = () => {
           
           try {
             // Send the code to the backend
-            const response = await axios.post('http://localhost:5000/user/auth/google', {
+            const response = await axios.post('https://justicepoint-backend.onrender.com/user/auth/google', {
               code
             });
 

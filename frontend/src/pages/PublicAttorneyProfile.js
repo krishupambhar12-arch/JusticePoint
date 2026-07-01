@@ -12,7 +12,7 @@ const PublicAttorneyProfile = () => {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
-  const BACKEND_URL = "http://localhost:5000";
+  const BACKEND_URL = "https://justicepoint-backend.onrender.com";
 
   const fetchAttorneyDetails = useCallback(async () => {
     try {

@@ -255,7 +255,7 @@ const AdminDoctors = () => {
     try {
       // Test with auth route
       console.log("🔍 Frontend - Making API call to codes endpoint");
-      console.log("🔍 Frontend - Request URL:", "http://localhost:5000/admin/codes");
+      console.log("🔍 Frontend - Request URL:", "https://justicepoint-backend.onrender.com/admin/codes");
       console.log("🔍 Frontend - Request data:", {
         name: formData.name,
         email: formData.email,
@@ -266,7 +266,7 @@ const AdminDoctors = () => {
         attorneyCode: formData.attorneyCode
       });
       
-      const response = await fetch("http://localhost:5000/admin/codes", {
+      const response = await fetch("https://justicepoint-backend.onrender.com/admin/codes", {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

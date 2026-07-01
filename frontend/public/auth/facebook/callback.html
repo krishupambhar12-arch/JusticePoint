@@ -13,7 +13,7 @@
             
             if (code) {
                 // Send the code to the backend
-                fetch(`http://localhost:5000/auth/${provider}`, {
+                fetch(`https://justicepoint-backend.onrender.com/auth/${provider}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

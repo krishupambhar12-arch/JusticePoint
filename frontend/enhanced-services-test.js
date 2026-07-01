@@ -61,9 +61,9 @@ console.log("   - No caching issues - always shows latest database state");
 
 console.log("");
 console.log("🌐 Access Points:");
-console.log("   - Admin Services Management: http://localhost:3000/admin/services");
-console.log("   - User Services Page: http://localhost:3000/services");
-console.log("   - Home Page (Dynamic Services): http://localhost:3000/");
+console.log("   - Admin Services Management: https://justicepoint.onrender.com/admin/services");
+console.log("   - User Services Page: https://justicepoint.onrender.com/services");
+console.log("   - Home Page (Dynamic Services): https://justicepoint.onrender.com/");
 
 console.log("");
 console.log("🧪 Test Scenarios:");

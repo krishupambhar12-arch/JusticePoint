@@ -190,7 +190,7 @@ const ClientProfile = () => {
       }
       
       // Redirect the main parent window and close the popup
-      window.opener.location.href = "http://localhost:3000/client/dashboard";
+      window.opener.location.href = "https://justicepoint.onrender.com/client/dashboard";
       window.close();
     } else {
       console.log('Not a popup window or opener is closed, using normal navigation');
@@ -381,7 +381,7 @@ const ClientProfile = () => {
                     <>
                       <img 
                         key={`${patient.profilePicture}-${imageRefreshKey}`} // Force re-render when image changes
-                        src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/uploads/${patient.profilePicture}`} 
+                        src={`${process.env.REACT_APP_API_URL || 'https://justicepoint-backend.onrender.com'}/uploads/${patient.profilePicture}`} 
                         alt="Profile" 
                         className="profile-image"
                         style={{ border: '2px solid red' }} // Debug border

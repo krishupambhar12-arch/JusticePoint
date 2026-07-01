@@ -39,9 +39,9 @@ console.log("   5. Test delete functionality");
 
 console.log("");
 console.log("🌐 Access Points:");
-console.log("   - Admin Panel: http://localhost:3000/admin/services");
-console.log("   - User Services: http://localhost:3000/services");
-console.log("   - Home Page: http://localhost:3000/");
+console.log("   - Admin Panel: https://justicepoint.onrender.com/admin/services");
+console.log("   - User Services: https://justicepoint.onrender.com/services");
+console.log("   - Home Page: https://justicepoint.onrender.com/");
 
 console.log("");
 console.log("🔍 Debugging Tips:");
