@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Attorney = require("../models/Attorney");
+const Feedback = require("../models/Feedback");
 const auth = require("../middleware/auth");
 
 const router = express.Router();
@@ -281,6 +282,79 @@ router.post("/login", async (req, res) => {
   }
 }); 
 
+// ===== GET USER FEEDBACK =====
+router.get("/feedback", auth, async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    // Get all feedback for this user
+    const feedbacks = await Feedback.find({ user_id: userId })
+      .sort({ createdAt: -1 })
+      .select('subject message rating status createdAt admin_response responded_at');
+
+    console.log(`🔍 Found ${feedbacks.length} feedbacks for user`);
+
+    res.json({
+      message: "Feedback retrieved successfully",
+      feedbacks: feedbacks.map(feedback => ({
+        id: feedback._id,
+        subject: feedback.subject,
+        message: feedback.message,
+        rating: feedback.rating,
+        status: feedback.status,
+        createdAt: feedback.createdAt,
+        admin_response: feedback.admin_response,
+        responded_at: feedback.responded_at
+      }))
+    });
+
+  } catch (error) {
+    console.error('❌ Get feedback error:', error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ===== SUBMIT FEEDBACK =====
+router.post('/feedback', auth, async (req, res) => {
+  try {
+    const { subject, message, rating } = req.body;
+    const userId = req.userId;
+
+    // Validate required fields
+    if (!subject || !message) {
+      return res.status(400).json({ message: "Subject and message are required" });
+    }
+
+    // Create feedback
+    const feedback = new Feedback({
+      user_id: userId,
+      subject,
+      message,
+      rating: rating || 5,
+      status: 'Pending'
+    });
+
+    await feedback.save();
+    console.log('✅ Feedback submitted:', feedback.id);
+
+    res.status(201).json({
+      message: "Feedback submitted successfully",
+      feedback: {
+        id: feedback._id,
+        subject: feedback.subject,
+        message: feedback.message,
+        rating: feedback.rating,
+        status: feedback.status,
+        createdAt: feedback.createdAt
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Submit feedback error:', error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // ===== GET USER PROFILE =====
 router.get("/profile", auth, async (req, res) => {
   try {
@@ -422,7 +496,106 @@ router.put("/profile", async (req, res) => {
   }
 });
 
-// Google OAuth
+// Google OAuth GET route (for redirect from Google)
+router.get("/auth/google", (req, res) => {
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/user';
+  
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${process.env.GOOGLE_CLIENT_ID}&` +
+    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+    `response_type=code&` +
+    `scope=${encodeURIComponent('openid email profile')}&` +
+    `access_type=offline&` +
+    `prompt=consent`;
+  
+  res.redirect(authUrl);
+});
+
+// Google OAuth callback GET route
+router.get("/auth/google/callback", async (req, res) => {
+  try {
+    const { code } = req.query;
+    
+    if (!code) {
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=missing_code`);
+    }
+    
+    // Exchange code for tokens
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: process.env.GOOGLE_REDIRECT_URI,
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    const tokenData = await tokenResponse.json();
+    
+    if (tokenData.error) {
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=${tokenData.error}`);
+    }
+
+    // Get user profile from Google
+    const profileResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+      },
+    });
+
+    const profile = await profileResponse.json();
+
+    // Check if user already exists
+    let user = await User.findOne({ 
+      $or: [
+        { email: profile.email },
+        { providerId: profile.id, provider: 'google' }
+      ]
+    });
+
+    if (user) {
+      if (!user.providerId || user.provider !== 'google') {
+        user.provider = 'google';
+        user.providerId = profile.id;
+        user.isSocialLogin = true;
+        user.profilePicture = profile.picture;
+        await user.save();
+      }
+    } else {
+      user = new User({
+        name: profile.name,
+        email: profile.email,
+        provider: 'google',
+        providerId: profile.id,
+        isSocialLogin: true,
+        profilePicture: profile.picture,
+        role: 'Client',
+        password: 'google_oauth_' + Math.random().toString(36).substring(2, 15)
+      });
+
+      await user.save();
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || "secretKey", {
+      expiresIn: "24h",
+    });
+    
+    // Redirect to frontend with token
+    res.redirect(`${process.env.FRONTEND_URL}/login?token=${token}&role=${user.role}&name=${encodeURIComponent(profile.name)}&email=${encodeURIComponent(profile.email)}`);
+    
+  } catch (error) {
+    console.error('Google OAuth callback error:', error);
+    res.redirect(`${process.env.FRONTEND_URL}/login?error=server_error`);
+  }
+});
+
+// Google OAuth POST route (for direct API calls)
 router.post("/auth/google", async (req, res) => {
   try {
     const { code } = req.body;
@@ -548,7 +721,97 @@ router.post("/auth/google", async (req, res) => {
   }
 });
 
-// Facebook OAuth
+// Facebook OAuth GET route (for redirect from Facebook)
+router.get("/auth/facebook", (req, res) => {
+  const redirectUri = process.env.FACEBOOK_REDIRECT_URI || 'http://localhost:3000/auth/facebook/callback';
+  
+  const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?` +
+    `client_id=${process.env.FACEBOOK_APP_ID}&` +
+    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+    `scope=email,public_profile`;
+  
+  res.redirect(authUrl);
+});
+
+// Facebook OAuth callback GET route
+router.get("/auth/facebook/callback", async (req, res) => {
+  try {
+    const { code } = req.query;
+    
+    if (!code) {
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=missing_code`);
+    }
+    
+    // Exchange code for tokens
+    const tokenResponse = await fetch(`https://graph.facebook.com/v18.0/oauth/access_token?` +
+      `client_id=${process.env.FACEBOOK_APP_ID}&` +
+      `client_secret=${process.env.FACEBOOK_APP_SECRET}&` +
+      `redirect_uri=${encodeURIComponent(process.env.FACEBOOK_REDIRECT_URI)}&` +
+      `code=${code}`, {
+      method: 'GET',
+    });
+
+    const tokenData = await tokenResponse.json();
+    
+    if (tokenData.error) {
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=${tokenData.error}`);
+    }
+
+    // Get user profile from Facebook
+    const profileResponse = await fetch(`https://graph.facebook.com/v18.0/me?` +
+      `fields=id,name,email,picture&` +
+      `access_token=${tokenData.access_token}`, {
+      method: 'GET',
+    });
+
+    const profile = await profileResponse.json();
+
+    // Check if user already exists
+    let user = await User.findOne({ 
+      $or: [
+        { email: profile.email },
+        { providerId: profile.id, provider: 'facebook' }
+      ]
+    });
+
+    if (user) {
+      if (!user.providerId || user.provider !== 'facebook') {
+        user.provider = 'facebook';
+        user.providerId = profile.id;
+        user.isSocialLogin = true;
+        user.profilePicture = profile.picture?.data?.url;
+        await user.save();
+      }
+    } else {
+      user = new User({
+        name: profile.name,
+        email: profile.email,
+        provider: 'facebook',
+        providerId: profile.id,
+        isSocialLogin: true,
+        profilePicture: profile.picture?.data?.url,
+        role: 'Client',
+        password: 'facebook_oauth_' + Math.random().toString(36).substring(2, 15)
+      });
+
+      await user.save();
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || "secretKey", {
+      expiresIn: "24h",
+    });
+    
+    // Redirect to frontend with token
+    res.redirect(`${process.env.FRONTEND_URL}/login?token=${token}&role=${user.role}&name=${encodeURIComponent(profile.name)}&email=${encodeURIComponent(profile.email)}`);
+    
+  } catch (error) {
+    console.error('Facebook OAuth callback error:', error);
+    res.redirect(`${process.env.FRONTEND_URL}/login?error=server_error`);
+  }
+});
+
+// Facebook OAuth POST route (for direct API calls)
 router.post("/auth/facebook", async (req, res) => {
   try {
     const { code } = req.body;
@@ -627,7 +890,104 @@ router.post("/auth/facebook", async (req, res) => {
   }
 });
 
-// LinkedIn OAuth
+// LinkedIn OAuth GET route (for redirect from LinkedIn)
+router.get("/auth/linkedin", (req, res) => {
+  const redirectUri = process.env.LINKEDIN_REDIRECT_URI || 'http://localhost:3000/auth/linkedin/callback';
+  
+  const authUrl = `https://www.linkedin.com/oauth/v2/authorization?` +
+    `client_id=${process.env.LINKEDIN_CLIENT_ID}&` +
+    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+    `response_type=code&` +
+    `scope=openid profile email`;
+  
+  res.redirect(authUrl);
+});
+
+// LinkedIn OAuth callback GET route
+router.get("/auth/linkedin/callback", async (req, res) => {
+  try {
+    const { code } = req.query;
+    
+    if (!code) {
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=missing_code`);
+    }
+    
+    // Exchange code for tokens
+    const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        code,
+        client_id: process.env.LINKEDIN_CLIENT_ID,
+        client_secret: process.env.LINKEDIN_CLIENT_SECRET,
+        redirect_uri: process.env.LINKEDIN_REDIRECT_URI,
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    const tokenData = await tokenResponse.json();
+    
+    if (tokenData.error) {
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=${tokenData.error}`);
+    }
+
+    // Get user profile from LinkedIn
+    const profileResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+      },
+    });
+
+    const profile = await profileResponse.json();
+
+    // Check if user already exists
+    let user = await User.findOne({ 
+      $or: [
+        { email: profile.email },
+        { providerId: profile.sub, provider: 'linkedin' }
+      ]
+    });
+
+    if (user) {
+      if (!user.providerId || user.provider !== 'linkedin') {
+        user.provider = 'linkedin';
+        user.providerId = profile.sub;
+        user.isSocialLogin = true;
+        user.profilePicture = profile.picture;
+        await user.save();
+      }
+    } else {
+      user = new User({
+        name: profile.name,
+        email: profile.email,
+        provider: 'linkedin',
+        providerId: profile.sub,
+        isSocialLogin: true,
+        profilePicture: profile.picture,
+        role: 'Client',
+        password: 'linkedin_oauth_' + Math.random().toString(36).substring(2, 15)
+      });
+
+      await user.save();
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || "secretKey", {
+      expiresIn: "24h",
+    });
+    
+    // Redirect to frontend with token
+    res.redirect(`${process.env.FRONTEND_URL}/login?token=${token}&role=${user.role}&name=${encodeURIComponent(profile.name)}&email=${encodeURIComponent(profile.email)}`);
+    
+  } catch (error) {
+    console.error('LinkedIn OAuth callback error:', error);
+    res.redirect(`${process.env.FRONTEND_URL}/login?error=server_error`);
+  }
+});
+
+// LinkedIn OAuth POST route (for direct API calls)
 router.post("/auth/linkedin", async (req, res) => {
   try {
     const { code } = req.body;

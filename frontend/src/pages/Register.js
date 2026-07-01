@@ -35,8 +35,10 @@ const Register = () => {
       const left = (window.innerWidth - popupWidth) / 2;
       const top = (window.innerHeight - popupHeight) / 2;
       
-      switch(provider) {
+      
+      switch(provider) { 
         case 'google':
+           console.log("CLIENT ID:", process.env.REACT_APP_GOOGLE_CLIENT_ID);          
           authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
             `client_id=${process.env.REACT_APP_GOOGLE_CLIENT_ID}&` +
             `redirect_uri=${encodeURIComponent('http://localhost:3000/user')}&` +
