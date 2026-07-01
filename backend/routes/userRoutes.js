@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Attorney = require("../models/Attorney");
 const Feedback = require("../models/Feedback");
+const Appointment = require("../models/Appointment");
 const auth = require("../middleware/auth");
 
 const router = express.Router();
@@ -1123,15 +1124,50 @@ router.get("/appointments", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // For now, return empty appointments array
-    // You can implement actual appointment logic later
+    // Fetch appointments for this user
+    const appointments = await Appointment.find({ 
+      user_id: user._id,
+      isActive: true 
+    })
+    .populate('attorney_id', 'name specialization')
+    .populate('doctor_id', 'name specialization')
+    .sort({ date: -1, createdAt: -1 });
+
+    // Format appointments for frontend
+    const formattedAppointments = appointments.map(appt => ({
+      id: appt._id,
+      date: new Date(appt.date).toLocaleDateString(),
+      time: appt.time,
+      subject: appt.subject,
+      purpose: appt.purpose,
+      caseSummary: appt.caseSummary,
+      attorneyName: appt.attorneyName,
+      attorneySpecialization: appt.attorneySpecialization,
+      attorneyFees: appt.attorneyFees,
+      status: appt.status,
+      doctor: appt.doctor_id ? {
+        name: appt.doctor_id.name,
+        specialization: appt.doctor_id.specialization
+      } : null,
+      createdAt: appt.createdAt
+    }));
+
+    // Calculate stats
+    const totalAppointments = appointments.length;
+    const upcomingAppointments = appointments.filter(a => 
+      new Date(a.date) >= new Date() && a.status !== 'Cancelled'
+    ).length;
+    const completedAppointments = appointments.filter(a => 
+      a.status === 'Completed' || new Date(a.date) < new Date()
+    ).length;
+
     res.json({
       message: "Appointments retrieved successfully",
-      appointments: [],
+      appointments: formattedAppointments,
       stats: {
-        totalAppointments: 0,
-        upcomingAppointments: 0,
-        completedAppointments: 0
+        totalAppointments,
+        upcomingAppointments,
+        completedAppointments
       }
     });
 
